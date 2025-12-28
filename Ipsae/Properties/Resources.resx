@@ -130,22 +130,31 @@
   <data name="list" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resource\list.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="NanumSquareNeo-bRg" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resource\NanumSquareNeo-bRg.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="NanumSquareNeo-cBd" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resource\NanumSquareNeo-cBd.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="setting" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resource\setting.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="sidebar" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resource\sidebar.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="status" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resource\status.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="whitelist" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resource\whitelist.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="NanumSquareNeo-cBd" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resource\NanumSquareNeo-cBd.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="NanumSquareNeo-bRg" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resource\NanumSquareNeo-bRg.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="sidebar" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resource\sidebar.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="close" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resource\close.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="maximize" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resource\maximize.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="minimize" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resource\minimize.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

@@ -1,0 +1,34 @@
+<UserControl x:Class="Ipsae.View.Pages.SystemSettingPageControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Background="White">
+        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20">
+            <TextBlock FontSize="28" FontWeight="Bold" Text="System Setting" Margin="0 0 0 30"/>
+            
+            <StackPanel Orientation="Horizontal" Margin="0 10">
+                <TextBlock FontSize="16" Text="Auto-Update:" Width="150" VerticalAlignment="Center"/>
+                <CheckBox IsChecked="True" VerticalAlignment="Center" Margin="10 0"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0 10">
+                <TextBlock FontSize="16" Text="Logging Enabled:" Width="150" VerticalAlignment="Center"/>
+                <CheckBox IsChecked="True" VerticalAlignment="Center" Margin="10 0"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0 10">
+                <TextBlock FontSize="16" Text="Alert Level:" Width="150" VerticalAlignment="Center"/>
+                <ComboBox Width="200" Margin="10 0">
+                    <ComboBoxItem>Low</ComboBoxItem>
+                    <ComboBoxItem>Medium</ComboBoxItem>
+                    <ComboBoxItem IsSelected="True">High</ComboBoxItem>
+                </ComboBox>
+            </StackPanel>
+            
+            <Button Content="Save Settings" Width="120" Margin="0 30 0 0" Padding="10"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

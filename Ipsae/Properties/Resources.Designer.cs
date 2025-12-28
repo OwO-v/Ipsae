@@ -73,6 +73,16 @@ namespace Ipsae.Properties {
         /// <summary>
         ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
+        public static byte[] close {
+            get {
+                object obj = ResourceManager.GetObject("close", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
         public static byte[] folder {
             get {
                 object obj = ResourceManager.GetObject("folder", resourceCulture);
@@ -96,6 +106,26 @@ namespace Ipsae.Properties {
         public static byte[] list {
             get {
                 object obj = ResourceManager.GetObject("list", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
+        public static byte[] maximize {
+            get {
+                object obj = ResourceManager.GetObject("maximize", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
+        public static byte[] minimize {
+            get {
+                object obj = ResourceManager.GetObject("minimize", resourceCulture);
                 return ((byte[])(obj));
             }
         }

@@ -37,9 +37,12 @@
 
   <ItemGroup>
     <None Remove="Resource\blacklist.png" />
+    <None Remove="Resource\close.png" />
     <None Remove="Resource\folder.png" />
     <None Remove="Resource\leaf.png" />
     <None Remove="Resource\list.png" />
+    <None Remove="Resource\maximize.png" />
+    <None Remove="Resource\minimize.png" />
     <None Remove="Resource\NanumSquareNeo-bRg.ttf" />
     <None Remove="Resource\NanumSquareNeo-cBd.ttf" />
     <None Remove="Resource\setting.png" />
@@ -49,6 +52,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resource\close.png" />
     <Resource Include="Resource\leaf.ico" />
   </ItemGroup>
 
@@ -57,6 +61,8 @@
     <Resource Include="Resource\folder.png" />
     <Resource Include="Resource\leaf.png" />
     <Resource Include="Resource\list.png" />
+    <Resource Include="Resource\maximize.png" />
+    <Resource Include="Resource\minimize.png" />
     <Resource Include="Resource\NanumSquareNeo-bRg.ttf" />
     <Resource Include="Resource\NanumSquareNeo-cBd.ttf" />
     <Resource Include="Resource\setting.png" />
@@ -66,6 +72,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Converter\" />
     <Folder Include="Model\" />
     <Folder Include="Function\" />
   </ItemGroup>

@@ -19,6 +19,7 @@ public class MainWindowViewModel : ViewModelBase
         set { SetProperty(ref _isSidebarExpanded, value); }
     }
 
+
     private void DragMove(object? parameter)
     {
         if (parameter is MouseButtonEventArgs e && e.LeftButton == MouseButtonState.Pressed)
