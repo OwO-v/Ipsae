@@ -6,6 +6,83 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>AnyCPU;x64</Platforms>
+    <SignAssembly>False</SignAssembly>
+    <BaseOutputPath>$(SolutionDir)CompiledExe\x64\</BaseOutputPath>
+    <Description></Description>
+    <Copyright></Copyright>
+    <ApplicationIcon>Resource\leaf.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebugType>embedded</DebugType>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DebugType>embedded</DebugType>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resource\blacklist.png" />
+    <None Remove="Resource\folder.png" />
+    <None Remove="Resource\leaf.png" />
+    <None Remove="Resource\list.png" />
+    <None Remove="Resource\NanumSquareNeo-bRg.ttf" />
+    <None Remove="Resource\NanumSquareNeo-cBd.ttf" />
+    <None Remove="Resource\setting.png" />
+    <None Remove="Resource\sidebar.png" />
+    <None Remove="Resource\status.png" />
+    <None Remove="Resource\whitelist.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resource\leaf.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resource\blacklist.png" />
+    <Resource Include="Resource\folder.png" />
+    <Resource Include="Resource\leaf.png" />
+    <Resource Include="Resource\list.png" />
+    <Resource Include="Resource\NanumSquareNeo-bRg.ttf" />
+    <Resource Include="Resource\NanumSquareNeo-cBd.ttf" />
+    <Resource Include="Resource\setting.png" />
+    <Resource Include="Resource\sidebar.png" />
+    <Resource Include="Resource\status.png" />
+    <Resource Include="Resource\whitelist.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Model\" />
+    <Folder Include="Function\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
 
 </Project>
