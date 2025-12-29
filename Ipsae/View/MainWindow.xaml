@@ -104,7 +104,7 @@
                         HorizontalContentAlignment="Left" Background="White" Padding="17.5 0 0 0" x:Name="StatusButton">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Image Source="/Resource/status.png" Width="35" Height="35" Margin="0 0 10.5 0"/>
-                        <TextBlock Text="Service Status" FontSize="16" VerticalAlignment="Center"/>
+                        <TextBlock Text="서비스 상태" FontSize="16" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
 
@@ -112,7 +112,7 @@
                         HorizontalContentAlignment="Left" Background="White" Padding="17.5 0 0 0" x:Name="EventButton">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Image Source="/Resource/list.png" Width="35" Height="35" Margin="0 0 10.5 0"/>
-                        <TextBlock Text="Event List" FontSize="16" VerticalAlignment="Center"/>
+                        <TextBlock Text="탐지 목록" FontSize="16" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
 
@@ -136,7 +136,7 @@
                         HorizontalContentAlignment="Left" Background="White" Padding="17.5 0 0 0" x:Name="SettingButton">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Image Source="/Resource/setting.png" Width="35" Height="35" Margin="0 0 10.5 0"/>
-                        <TextBlock Text="System Setting" FontSize="16" VerticalAlignment="Center"/>
+                        <TextBlock Text="시스템 설정" FontSize="16" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
 
@@ -164,6 +164,6 @@
             </Grid>
         </Border>
 
-        <ContentControl Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Background="White" x:Name="ContentControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Frame Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Background="White" x:Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" NavigationUIVisibility="Hidden"/>
     </Grid>
 </Window>

@@ -39,8 +39,8 @@ public partial class MainWindow : Window
             if (sender is MainWindowViewModel viewModel)
             {
                 Grid.SetColumnSpan(SidebarBorder, viewModel.IsSidebarExpanded ? 2 : 1);
-                Grid.SetColumn(ContentControl, viewModel.IsSidebarExpanded ? 2 : 1);
-                Grid.SetColumnSpan(ContentControl, viewModel.IsSidebarExpanded ? 2 : 3);
+                Grid.SetColumn(MainFrame, viewModel.IsSidebarExpanded ? 2 : 1);
+                Grid.SetColumnSpan(MainFrame, viewModel.IsSidebarExpanded ? 2 : 3);
 
                 foreach (var child in SidebarGrid.Children)
                 {
@@ -95,22 +95,22 @@ public partial class MainWindow : Window
 
     private void LoadPage(int pageIndex)
     {
-        UserControl? page = pageIndex switch
+        Page? page = pageIndex switch
         {
-            0 => new ServiceStatusPageControl(),
-            1 => new EventListPageControl(),
-            2 => new WhitelistIPPageControl(),
-            3 => new BlacklistIPPageControl(),
-            4 => new SystemSettingPageControl(),
+            0 => new ServiceStatusPage(),
+            1 => new ServiceStatusPage(),
+            2 => new ServiceStatusPage(),
+            3 => new ServiceStatusPage(),
+            4 => new ServiceStatusPage(),
             _ => null
         };
 
         if (page != null)
         {
-            ContentControl.Content = null;
+            MainFrame.Content = null;
             Dispatcher.InvokeAsync(() =>
             {
-                ContentControl.Content = page;
+                MainFrame.Content = page;
             }, System.Windows.Threading.DispatcherPriority.Background);
         }
     }
