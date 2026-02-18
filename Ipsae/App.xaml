@@ -1,6 +1,32 @@
-﻿<Application x:Class="Ipsae.App"
+<Application x:Class="Ipsae.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Ipsae"
+             xmlns:vm="clr-namespace:Ipsae.ViewModel"
+             xmlns:pages="clr-namespace:Ipsae.View.Pages"
+             xmlns:converter="clr-namespace:Ipsae.Converter"
              StartupUri="View/MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Style/SharedStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <converter:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+            <converter:SeverityToColorConverter x:Key="SeverityToColor"/>
+
+            <DataTemplate DataType="{x:Type vm:ServiceStatusViewModel}">
+                <pages:ServiceStatusPage/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:EventListViewModel}">
+                <pages:EventListPage/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:IpListViewModel}">
+                <pages:IpListPage/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <pages:SettingsPage/>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>

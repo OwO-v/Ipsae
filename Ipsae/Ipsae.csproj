@@ -72,8 +72,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Converter\" />
-    <Folder Include="Model\" />
     <Folder Include="Function\" />
   </ItemGroup>
 

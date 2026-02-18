@@ -1,4 +1,4 @@
-﻿<Window
+<Window
     x:Class="Ipsae.View.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -9,83 +9,8 @@
     mc:Ignorable="d"
     Title="Ipsae IDS" Height="720" Width="1280" WindowStyle="None" FontFamily="Segoe UI">
 
-    <Window.Resources>
-        <SolidColorBrush x:Key="BgMain" Color="#0C0C0C"/>
-        <SolidColorBrush x:Key="BgCard" Color="#111111"/>
-        <SolidColorBrush x:Key="Border" Color="#1A1A1A"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#DDDDDD"/>
-        <SolidColorBrush x:Key="TextDim" Color="#444444"/>
-        <SolidColorBrush x:Key="StatusGreen" Color="#44AA55"/>
-
-        <Style x:Key="WindowControlButton" TargetType="Button">
-            <Setter Property="Width" Value="46"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#222222"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#E74C3C"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="TileButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource BgCard}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Border}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="VerticalContentAlignment" Value="Top"/>
-            <Setter Property="Padding" Value="24,28"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="TileBd" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TileBd" Property="Background" Value="#141414"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
-
     <Border BorderBrush="#222" BorderThickness="1">
-        <Grid Background="{StaticResource BgMain}" x:Name="RootGrid">
+        <Grid Background="{StaticResource BgMain}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="48"/>
                 <RowDefinition Height="*"/>
@@ -106,21 +31,21 @@
                     <Border Width="1" Height="14" Background="{StaticResource Border}" Margin="16,0"/>
                     <Ellipse Width="6" Height="6" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center"
                              Margin="0,0,6,0"/>
-                    <TextBlock Text="ACTIVE" FontSize="11" Foreground="{StaticResource TextDim}"
-                               VerticalAlignment="Center" x:Name="StatusLabel"/>
+                    <TextBlock Text="{Binding ServiceStatus}" FontSize="11" Foreground="{StaticResource TextDim}"
+                               VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource WindowControlButton}"
-                            x:Name="MinimizeButton" Click="MinimizeButton_Click">
+                            Command="{Binding MinimizeCommand}">
                         <Image Source="/Resource/minimize.png" Width="12" Height="12"/>
                     </Button>
                     <Button Style="{StaticResource WindowControlButton}"
-                            x:Name="MaximizeButton" Click="MaximizeButton_Click">
+                            Command="{Binding MaximizeCommand}">
                         <Image Source="/Resource/maximize.png" Width="12" Height="12"/>
                     </Button>
                     <Button Style="{StaticResource CloseButtonStyle}"
-                            x:Name="CloseButton" Click="CloseButton_Click">
+                            Command="{Binding CloseCommand}">
                         <Image Source="/Resource/close.png" Width="12" Height="12"/>
                     </Button>
                 </StackPanel>
@@ -128,7 +53,7 @@
 
             <Border Grid.Row="1" BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0">
                 <Grid>
-                    <Grid x:Name="HomeGrid">
+                    <Grid Visibility="{Binding IsHomeVisible, Converter={StaticResource BoolToVisibility}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
@@ -141,53 +66,50 @@
                         </Grid.ColumnDefinitions>
 
                         <UniformGrid Grid.Row="1" Grid.Column="1" Columns="3" Width="720">
-                            <Button Style="{StaticResource TileButton}" x:Name="TileStatus"
-                                    Click="TileStatus_Click" Margin="0,0,5,5">
+                            <Button Style="{StaticResource TileButton}"
+                                    Command="{Binding NavigateToStatusCommand}" Margin="0,0,5,5">
                                 <StackPanel>
                                     <TextBlock Text="서비스 상태" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
                                     <TextBlock Text="동작 중" FontSize="12" Foreground="#555" Margin="0,0,0,18"/>
-                                    <TextBlock Text="ACTIVE" FontSize="9" Foreground="#44AA55" FontWeight="SemiBold" x:Name="TileStatusSub"/>
+                                    <TextBlock Text="{Binding ServiceStatus}" FontSize="9" Foreground="#44AA55" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource TileButton}" x:Name="TileEvents"
-                                    Click="TileEvents_Click" Margin="5,0,5,5">
+                            <Button Style="{StaticResource TileButton}"
+                                    Command="{Binding NavigateToEventsCommand}" Margin="5,0,5,5">
                                 <StackPanel>
                                     <TextBlock Text="탐지 목록" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
-                                    <TextBlock Text="1,284 검토" FontSize="12" Foreground="#555" Margin="0,0,0,18"
-                                               x:Name="TileEventsValue"/>
-                                    <TextBlock Text="0 THREATS" FontSize="9" Foreground="#88CCFF"
-                                               FontWeight="SemiBold" x:Name="TileEventsSub"/>
+                                    <TextBlock Text="{Binding EventCount}" FontSize="12" Foreground="#555" Margin="0,0,0,18"/>
+                                    <TextBlock Text="{Binding EventThreats}" FontSize="9" Foreground="#88CCFF"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource TileButton}" x:Name="TileWhitelist"
-                                    Click="TileWhitelist_Click" Margin="5,0,0,5">
+                            <Button Style="{StaticResource TileButton}"
+                                    Command="{Binding NavigateToWhitelistCommand}" Margin="5,0,0,5">
                                 <StackPanel>
                                     <TextBlock Text="Whitelist IP" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
-                                    <TextBlock Text="3개 등록" FontSize="12" Foreground="#555" Margin="0,0,0,18"
-                                               x:Name="TileWhitelistValue"/>
-                                    <TextBlock Text="3 ENTRIES" FontSize="9" Foreground="#AAAAAA"
-                                               FontWeight="SemiBold" x:Name="TileWhitelistSub"/>
+                                    <TextBlock Text="{Binding WhitelistCount}" FontSize="12" Foreground="#555" Margin="0,0,0,18"/>
+                                    <TextBlock Text="{Binding WhitelistEntries}" FontSize="9" Foreground="#AAAAAA"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource TileButton}" x:Name="TileBlacklist"
-                                    Click="TileBlacklist_Click" Margin="0,5,5,0">
+                            <Button Style="{StaticResource TileButton}"
+                                    Command="{Binding NavigateToBlacklistCommand}" Margin="0,5,5,0">
                                 <StackPanel>
                                     <TextBlock Text="Blacklist IP" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
-                                    <TextBlock Text="1개 등록" FontSize="12" Foreground="#555" Margin="0,0,0,18"
-                                               x:Name="TileBlacklistValue"/>
-                                    <TextBlock Text="1 ENTRY" FontSize="9" Foreground="#CC6666"
-                                               FontWeight="SemiBold" x:Name="TileBlacklistSub"/>
+                                    <TextBlock Text="{Binding BlacklistCount}" FontSize="12" Foreground="#555" Margin="0,0,0,18"/>
+                                    <TextBlock Text="{Binding BlacklistEntries}" FontSize="9" Foreground="#CC6666"
+                                               FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource TileButton}" x:Name="TileSettings"
-                                    Click="TileSettings_Click" Margin="5,5,0,0">
+                            <Button Style="{StaticResource TileButton}"
+                                    Command="{Binding NavigateToSettingsCommand}" Margin="5,5,0,0">
                                 <StackPanel>
                                     <TextBlock Text="시스템 설정" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
@@ -199,7 +121,8 @@
                         </UniformGrid>
                     </Grid>
 
-                    <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden" Visibility="Collapsed"/>
+                    <ContentControl Content="{Binding CurrentPageViewModel}"
+                                    Visibility="{Binding IsHomeVisible, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}"/>
                 </Grid>
             </Border>
         </Grid>
