@@ -1,28 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace Ipsae.View.Pages
+namespace Ipsae.View.Pages;
+
+public partial class IpListPage : Page
 {
-    /// <summary>
-    /// IpListPage.xaml에 대한 상호 작용 논리
-    /// </summary>
-    public partial class IpListPage : Page
+    private readonly string _listType;
+
+    public IpListPage(string listType)
     {
-        public IpListPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+        _listType = listType;
+        PageTitle.Text = listType == "white" ? "Whitelist IP" : "Blacklist IP";
+    }
+
+    private void BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        var mainWindow = Application.Current.MainWindow as MainWindow;
+        mainWindow?.NavigateHome();
+    }
+
+    private void AddIpButton_Click(object sender, RoutedEventArgs e)
+    {
+        var ip = IpInputBox.Text.Trim();
+        if (string.IsNullOrEmpty(ip)) return;
+        IpInputBox.Clear();
     }
 }

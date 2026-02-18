@@ -25,12 +25,6 @@ public partial class MainWindow : Window
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
 
-        _navButtons.Add(StatusButton);
-        _navButtons.Add(EventButton);
-        _navButtons.Add(WhitelistButton);
-        _navButtons.Add(BlacklistButton);
-        _navButtons.Add(SettingButton);
-
         AttachButtonClickHandlers();
 
         Dispatcher.InvokeAsync(() =>
@@ -41,49 +35,7 @@ public partial class MainWindow : Window
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainWindowViewModel.IsSidebarExpanded))
-        {
-            if (sender is MainWindowViewModel viewModel)
-            {
-                Grid.SetColumnSpan(SidebarBorder, viewModel.IsSidebarExpanded ? 2 : 1);
-                Grid.SetColumn(MainFrame, viewModel.IsSidebarExpanded ? 2 : 1);
-                Grid.SetColumnSpan(MainFrame, viewModel.IsSidebarExpanded ? 2 : 3);
 
-                foreach (var child in SidebarGrid.Children)
-                {
-                    if (child is StackPanel stackPanel && stackPanel.Name == "LogoTitle")
-                    {
-                        var image = stackPanel.Children[0] as Image;
-                        if (image != null)
-                        {
-                            image.Width = viewModel.IsSidebarExpanded ? 50 : 35;
-                            image.Height = viewModel.IsSidebarExpanded ? 50 : 35;
-                        }
-
-                        var textBlock = stackPanel.Children[1] as TextBlock;
-                        if (textBlock != null)
-                        {
-                            textBlock.Visibility = viewModel.IsSidebarExpanded
-                                ? Visibility.Visible
-                                : Visibility.Collapsed;
-                        }
-                    }
-                    else if (child is Button button)
-                    {
-                        if (button.Content is StackPanel btnStackPanel && btnStackPanel.Children.Count > 1)
-                        {
-                            var btnTextBlock = btnStackPanel.Children[1] as TextBlock;
-                            if (btnTextBlock != null)
-                            {
-                                btnTextBlock.Visibility = viewModel.IsSidebarExpanded
-                                    ? Visibility.Visible
-                                    : Visibility.Collapsed;
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private void AttachButtonClickHandlers()
@@ -156,21 +108,42 @@ public partial class MainWindow : Window
         _activeNavButton = selectedButton;
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    private void NavigateTo(System.Windows.Controls.Page page)
     {
-        this.WindowState = WindowState.Minimized;
+        HomeGrid.Visibility = Visibility.Collapsed;
+        MainFrame.Visibility = Visibility.Visible;
+        MainFrame.Navigate(page);
     }
+
+    public void NavigateHome()
+    {
+        MainFrame.Content = null;
+        MainFrame.Visibility = Visibility.Collapsed;
+        HomeGrid.Visibility = Visibility.Visible;
+    }
+
+    private void TileStatus_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(new ServiceStatusPage());
+
+    private void TileEvents_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(new EventListPage());
+
+    private void TileWhitelist_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(new IpListPage("white"));
+
+    private void TileBlacklist_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(new IpListPage("black"));
+
+    private void TileSettings_Click(object sender, RoutedEventArgs e)
+        => NavigateTo(new SettingsPage());
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        => WindowState = WindowState.Minimized;
 
     private void MaximizeButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (this.WindowState == WindowState.Maximized)
-            this.WindowState = WindowState.Normal;
-        else
-            this.WindowState = WindowState.Maximized;
-    }
+        => WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal : WindowState.Maximized;
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        this.Hide();
-    }
+        => this.Hide();
 }

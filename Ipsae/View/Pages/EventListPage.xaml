@@ -5,41 +5,36 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Ipsae.View.Pages"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="600" d:DesignWidth="1000"
       Title="EventListPage" FontFamily="Segoe UI">
 
     <Page.Resources>
-        <SolidColorBrush x:Key="BgPage" Color="#1A1A1A"/>
-        <SolidColorBrush x:Key="BgCard" Color="#222222"/>
-        <SolidColorBrush x:Key="BorderCard" Color="#2A2A2A"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#E0E0E0"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#888888"/>
-        <SolidColorBrush x:Key="AccentBlue" Color="#2980B9"/>
-        <SolidColorBrush x:Key="SeverityHigh" Color="#E74C3C"/>
-        <SolidColorBrush x:Key="SeverityMedium" Color="#F39C12"/>
-        <SolidColorBrush x:Key="SeverityLow" Color="#3498DB"/>
+        <SolidColorBrush x:Key="BgMain" Color="#0C0C0C"/>
+        <SolidColorBrush x:Key="BgCard" Color="#131313"/>
+        <SolidColorBrush x:Key="Border" Color="#1A1A1A"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#DDDDDD"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#555555"/>
 
-        <Style x:Key="SmallButton" TargetType="Button">
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="#CCC"/>
-            <Setter Property="Background" Value="#333"/>
-            <Setter Property="BorderBrush" Value="#555"/>
+        <Style x:Key="BackButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#2A2A2A"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="12,3"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="12,0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}" 
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#444"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#1A1A1A"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -48,84 +43,79 @@
         </Style>
     </Page.Resources>
 
-    <Grid Background="{StaticResource BgPage}">
-        <Grid Margin="32,28">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="16"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+    <Grid Background="{StaticResource BgMain}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0">
-                <TextBlock Text="이벤트 목록" FontSize="18" FontWeight="Bold" 
+        <Grid Grid.Row="0" Margin="20,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource BackButton}" x:Name="BackButton" Click="BackButton_Click">
+                    <TextBlock><Run Text="← "/><Run Text="홈"/></TextBlock>
+                </Button>
+                <Border Width="1" Height="16" Background="{StaticResource Border}" Margin="12,0"/>
+                <TextBlock Text="탐지 목록" FontSize="13" FontWeight="SemiBold"
                            Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
-                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
-                           FontSize="13" Foreground="{StaticResource TextSecondary}"
-                           x:Name="TotalCountText">
-                    <Run Text="총 "/><Run Text="0" x:Name="TotalCountRun"/><Run Text="건"/>
-                </TextBlock>
-            </Grid>
-
-            <ListView Grid.Row="2" x:Name="EventListView"
-                      Background="Transparent" BorderThickness="0"
-                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                      VirtualizingStackPanel.IsVirtualizing="True"
-                      VirtualizingStackPanel.VirtualizationMode="Recycling">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Margin" Value="0,0,0,6"/>
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListViewItem">
-                                    <ContentPresenter/>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{StaticResource BgCard}" CornerRadius="8" Padding="16,12"
-                                BorderBrush="{Binding SeverityColor}" BorderThickness="3,0,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding ProcessName}" FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondary}">
-                                        <Run Text="{Binding IpAddress}"/>
-                                        <Run Text=" · "/>
-                                        <Run Text="{Binding FilePath}"/>
-                                    </TextBlock>
-                                </StackPanel>
-
-                                <TextBlock Grid.Column="1" Text="{Binding DetectedDate}" 
-                                           FontSize="11" Foreground="{StaticResource TextSecondary}"
-                                           VerticalAlignment="Center" Margin="16,0"/>
-
-                                <Border Grid.Column="2" CornerRadius="4" Padding="8,4"
-                                        Background="{Binding SeverityBgColor}" VerticalAlignment="Center"
-                                        Margin="0,0,12,0">
-                                    <TextBlock Text="{Binding Severity}" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{Binding SeverityColor}"/>
-                                </Border>
-
-                                <Button Grid.Column="3" Content="폴더열기" 
-                                        Style="{StaticResource SmallButton}"
-                                        Command="{Binding OpenFolderCommand}"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+            </StackPanel>
+            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                       FontSize="11" Foreground="{StaticResource TextMuted}"
+                       x:Name="TotalCountText" Text="총 0건"/>
         </Grid>
+
+        <ListView Grid.Row="1" x:Name="EventListView" Margin="20,8,20,16"
+                  Background="Transparent" BorderThickness="0"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Margin" Value="0,0,0,4"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <ContentPresenter/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{StaticResource BgCard}" Padding="14,12,18,12"
+                            BorderBrush="{StaticResource Border}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ProcessName}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                <TextBlock FontSize="11" Foreground="{StaticResource TextMuted}">
+                                    <Run Text="{Binding IpAddress}"/>
+                                    <Run Text=" · "/>
+                                    <Run Text="{Binding FilePath}"/>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1" Text="{Binding DetectedDate}" 
+                                       FontSize="11" Foreground="#444444"
+                                       VerticalAlignment="Center" Margin="16,0"/>
+
+                            <Border Grid.Column="2" Padding="8,3"
+                                    Background="{Binding SeverityBgColor}" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Severity}" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{Binding SeverityColor}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
     </Grid>
 </Page>
