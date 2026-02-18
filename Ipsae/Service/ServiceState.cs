@@ -24,7 +24,7 @@ public class ServiceState : INotifyPropertyChanged
     private static readonly Color RedGlow = Color.FromRgb(0xCC, 0x55, 0x55);
     private static readonly Color OrangeGlow = Color.FromRgb(0xCC, 0x88, 0x33);
 
-    private ServiceStatus _status = ServiceStatus.Active;
+    private ServiceStatus _status = ServiceStatus.Inactive;
 
     private ServiceState() { }
 
