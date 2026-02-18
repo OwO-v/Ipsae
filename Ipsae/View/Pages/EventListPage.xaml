@@ -1,47 +1,12 @@
-﻿<Page x:Class="Ipsae.View.Pages.EventListPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:Ipsae.View.Pages"
-      mc:Ignorable="d" 
-      d:DesignHeight="600" d:DesignWidth="1000"
-      Title="EventListPage" FontFamily="Segoe UI">
-
-    <Page.Resources>
-        <SolidColorBrush x:Key="BgMain" Color="#0C0C0C"/>
-        <SolidColorBrush x:Key="BgCard" Color="#131313"/>
-        <SolidColorBrush x:Key="Border" Color="#1A1A1A"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#DDDDDD"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#555555"/>
-
-        <Style x:Key="BackButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#666666"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="12,3"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#1A1A1A"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Page.Resources>
+<UserControl x:Class="Ipsae.View.Pages.EventListPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Ipsae.View.Pages"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="1000"
+             FontFamily="Segoe UI">
 
     <Grid Background="{StaticResource BgMain}">
         <Grid.RowDefinitions>
@@ -51,7 +16,7 @@
 
         <Grid Grid.Row="0" Margin="20,0">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Style="{StaticResource BackButton}" x:Name="BackButton" Click="BackButton_Click">
+                <Button Style="{StaticResource BackButton}" Command="{Binding NavigateHomeCommand}">
                     <TextBlock><Run Text="← "/><Run Text="홈"/></TextBlock>
                 </Button>
                 <Border Width="1" Height="16" Background="{StaticResource Border}" Margin="12,0"/>
@@ -60,14 +25,15 @@
             </StackPanel>
             <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
                        FontSize="11" Foreground="{StaticResource TextMuted}"
-                       x:Name="TotalCountText" Text="총 0건"/>
+                       Text="{Binding TotalCount, StringFormat=총 {0}건}"/>
         </Grid>
 
-        <ListView Grid.Row="1" x:Name="EventListView" Margin="20,8,20,16"
+        <ListView Grid.Row="1" Margin="20,8,20,16"
                   Background="Transparent" BorderThickness="0"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   VirtualizingStackPanel.IsVirtualizing="True"
-                  VirtualizingStackPanel.VirtualizationMode="Recycling">
+                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                  ItemsSource="{Binding Events}">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -103,14 +69,15 @@
                                 </TextBlock>
                             </StackPanel>
 
-                            <TextBlock Grid.Column="1" Text="{Binding DetectedDate}" 
+                            <TextBlock Grid.Column="1" Text="{Binding DetectedDate}"
                                        FontSize="11" Foreground="#444444"
                                        VerticalAlignment="Center" Margin="16,0"/>
 
                             <Border Grid.Column="2" Padding="8,3"
-                                    Background="{Binding SeverityBgColor}" VerticalAlignment="Center">
+                                    Background="{Binding Severity, Converter={StaticResource SeverityToColor}, ConverterParameter=bg}"
+                                    VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Severity}" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{Binding SeverityColor}"/>
+                                           Foreground="{Binding Severity, Converter={StaticResource SeverityToColor}}"/>
                             </Border>
                         </Grid>
                     </Border>
@@ -118,4 +85,4 @@
             </ListView.ItemTemplate>
         </ListView>
     </Grid>
-</Page>
+</UserControl>
