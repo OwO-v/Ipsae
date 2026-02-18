@@ -29,7 +29,7 @@
                     <TextBlock Text="v1.0.0" FontSize="10" Foreground="#2A2A2A"
                                VerticalAlignment="Center" Margin="8,2,0,0"/>
                     <Border Width="1" Height="14" Background="{StaticResource Border}" Margin="16,0"/>
-                    <Ellipse Width="6" Height="6" Fill="{StaticResource StatusGreen}" VerticalAlignment="Center"
+                    <Ellipse Width="6" Height="6" Fill="{Binding State.StatusColor}" VerticalAlignment="Center"
                              Margin="0,0,6,0"/>
                     <TextBlock Text="{Binding ServiceStatus}" FontSize="11" Foreground="{StaticResource TextDim}"
                                VerticalAlignment="Center"/>
@@ -70,8 +70,8 @@
                                     Command="{Binding NavigateToStatusCommand}" Margin="0,0,5,5">
                                 <StackPanel>
                                     <TextBlock Text="서비스 상태" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
-                                    <TextBlock Text="동작 중" FontSize="12" Foreground="#555" Margin="0,0,0,18"/>
-                                    <TextBlock Text="{Binding ServiceStatus}" FontSize="9" Foreground="#44AA55" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding State.StatusSub}" FontSize="12" Foreground="#555" Margin="0,0,0,18"/>
+                                    <TextBlock Text="{Binding ServiceStatus}" FontSize="9" Foreground="{Binding State.StatusColor}" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
 

@@ -109,13 +109,13 @@
                             <TextBlock Text="설정 내보내기" FontSize="12"
                                        Foreground="{StaticResource TextLabel}" VerticalAlignment="Center"/>
                             <Button Content="Export" Style="{StaticResource ActionButton}"
-                                    Command="{Binding ExportCommand}"/>
+                                    Command="{Binding ExportCommand}" Width="65"/>
                         </Grid>
                         <Grid>
                             <TextBlock Text="설정 가져오기" FontSize="12"
                                        Foreground="{StaticResource TextLabel}" VerticalAlignment="Center"/>
                             <Button Content="Import" Style="{StaticResource ActionButton}"
-                                    Command="{Binding ImportCommand}"/>
+                                    Command="{Binding ImportCommand}" Width="65"/>
                         </Grid>
                     </StackPanel>
                 </Border>

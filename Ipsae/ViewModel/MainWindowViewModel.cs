@@ -114,6 +114,8 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
         set => SetProperty(ref _blacklistEntries, value);
     }
 
+    public ServiceState State => ServiceState.Instance;
+
     public void NavigateTo(string pageKey, object? parameter = null)
     {
         CurrentPageViewModel = pageKey switch
@@ -133,7 +135,7 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
 
     private void OnServiceStateChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ServiceState.StatusText))
+        if (e.PropertyName == nameof(ServiceState.Status))
         {
             ServiceStatus = ServiceState.Instance.StatusText;
         }

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Ipsae.View.Pages"
+             xmlns:svc="clr-namespace:Ipsae.Service"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
              FontFamily="Segoe UI">
@@ -77,19 +78,45 @@
                                         Padding="18" Margin="0,0,0,10">
                                     <StackPanel>
                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                                            <Ellipse Width="6" Height="6" Fill="{StaticResource StatusGreen}"
-                                                     VerticalAlignment="Center" Margin="0,0,8,0">
+                                            <Ellipse Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                     Fill="{Binding State.StatusColor}">
                                                 <Ellipse.Effect>
-                                                    <DropShadowEffect Color="#44AA55" BlurRadius="6"
+                                                    <DropShadowEffect Color="{Binding State.StatusGlowColor}" BlurRadius="6"
                                                                       ShadowDepth="0" Opacity="0.8"/>
                                                 </Ellipse.Effect>
                                             </Ellipse>
                                             <TextBlock Text="{Binding ServiceStatusText}" FontSize="12"
                                                        Foreground="#888888"/>
                                         </StackPanel>
-                                        <Button Content="STOP SERVICE" Style="{StaticResource StopButton}"
-                                                HorizontalAlignment="Stretch"
-                                                Command="{Binding ToggleServiceCommand}"/>
+                                        <Button HorizontalAlignment="Stretch"
+                                                Command="{Binding ToggleServiceCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource ServiceToggleButton}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static svc:ServiceStatus.Inactive}">
+                                                            <Setter Property="Content" Value="START SERVICE"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource StatusGreen}"/>
+                                                            <Setter Property="BorderBrush" Value="#203320"/>
+                                                            <Setter Property="Tag" Value="#101A10"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static svc:ServiceStatus.Starting}">
+                                                            <Setter Property="Content" Value="STARTING..."/>
+                                                            <Setter Property="Foreground" Value="{StaticResource StatusOrange}"/>
+                                                            <Setter Property="BorderBrush" Value="#332B20"/>
+                                                            <Setter Property="Tag" Value="#1A1510"/>
+                                                            <Setter Property="IsEnabled" Value="False"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static svc:ServiceStatus.Stopping}">
+                                                            <Setter Property="Content" Value="STOPPING..."/>
+                                                            <Setter Property="Foreground" Value="{StaticResource StatusOrange}"/>
+                                                            <Setter Property="BorderBrush" Value="#332B20"/>
+                                                            <Setter Property="Tag" Value="#1A1510"/>
+                                                            <Setter Property="IsEnabled" Value="False"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </StackPanel>
                                 </Border>
 
@@ -193,7 +220,8 @@
                 <TextBlock FontSize="9" Foreground="#2A2A2A" Margin="0,0,14,0"
                            Text="{Binding FooterPackets}"/>
                 <TextBlock Text="|" FontSize="9" Foreground="#1A1A1A" Margin="0,0,14,0"/>
-                <TextBlock Text="● MONITORING" FontSize="9" Foreground="{StaticResource StatusGreen}"/>
+                <TextBlock FontSize="9" Text="{Binding State.StatusLabel}"
+                           Foreground="{Binding State.StatusColor}"/>
             </StackPanel>
         </Border>
     </Grid>

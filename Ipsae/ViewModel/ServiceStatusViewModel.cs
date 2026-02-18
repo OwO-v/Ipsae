@@ -8,9 +8,9 @@ public class ServiceStatusViewModel : ViewModelBase
 {
     private readonly INavigationService _navigationService;
 
-    private string _serviceStatusText = ServiceState.Instance.IsRunning
-        ? "잎새가 동작하고 있습니다." : "잎새가 중지되었습니다.";
+    private string _serviceStatusText = GetStatusMessage(ServiceState.Instance.Status);
     private bool _isServiceRunning = ServiceState.Instance.IsRunning;
+    private bool _canToggleService = !ServiceState.Instance.IsTransitioning;
     private int _inspectedCount;
     private int _threatCount;
     private string _interfaceName = "eno1";
@@ -27,7 +27,7 @@ public class ServiceStatusViewModel : ViewModelBase
         ServiceState.Instance.PropertyChanged += OnServiceStateChanged;
 
         NavigateHomeCommand = new RelayCommand(_ => _navigationService.NavigateHome());
-        ToggleServiceCommand = new RelayCommand(_ => ToggleService());
+        ToggleServiceCommand = new RelayCommand(_ => ToggleService(), _ => CanToggleService);
         SwitchToStatusTabCommand = new RelayCommand(_ => IsStatusTabActive = true);
         SwitchToStatsTabCommand = new RelayCommand(_ => IsStatusTabActive = false);
     }
@@ -47,6 +47,12 @@ public class ServiceStatusViewModel : ViewModelBase
     {
         get => _isServiceRunning;
         set => SetProperty(ref _isServiceRunning, value);
+    }
+
+    public bool CanToggleService
+    {
+        get => _canToggleService;
+        set => SetProperty(ref _canToggleService, value);
     }
 
     public int InspectedCount
@@ -91,6 +97,8 @@ public class ServiceStatusViewModel : ViewModelBase
         set => SetProperty(ref _footerPackets, value);
     }
 
+    public ServiceState State => ServiceState.Instance;
+
     public bool IsStatusTabActive
     {
         get => _isStatusTabActive;
@@ -99,16 +107,32 @@ public class ServiceStatusViewModel : ViewModelBase
 
     private void ToggleService()
     {
-        ServiceState.Instance.IsRunning = !ServiceState.Instance.IsRunning;
+        var state = ServiceState.Instance;
+        state.Status = state.Status switch
+        {
+            ServiceStatus.Active => ServiceStatus.Stopping,
+            ServiceStatus.Inactive => ServiceStatus.Starting,
+            _ => state.Status
+        };
     }
 
     private void OnServiceStateChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ServiceState.IsRunning))
+        if (e.PropertyName == nameof(ServiceState.Status))
         {
-            var running = ServiceState.Instance.IsRunning;
-            IsServiceRunning = running;
-            ServiceStatusText = running ? "잎새가 동작하고 있습니다." : "잎새가 중지되었습니다.";
+            var status = ServiceState.Instance.Status;
+            IsServiceRunning = status == ServiceStatus.Active;
+            CanToggleService = !ServiceState.Instance.IsTransitioning;
+            ServiceStatusText = GetStatusMessage(status);
         }
     }
+
+    private static string GetStatusMessage(ServiceStatus status) => status switch
+    {
+        ServiceStatus.Active => "잎새가 동작하고 있습니다.",
+        ServiceStatus.Inactive => "잎새가 중지되었습니다.",
+        ServiceStatus.Starting => "잎새를 시작하는 중입니다...",
+        ServiceStatus.Stopping => "잎새를 중지하는 중입니다...",
+        _ => "알 수 없는 상태입니다."
+    };
 }
