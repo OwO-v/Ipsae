@@ -50,7 +50,6 @@
                     </Button>
                 </StackPanel>
             </Grid>
-
             <Border Grid.Row="1" BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0">
                 <Grid>
                     <Grid Visibility="{Binding IsHomeVisible, Converter={StaticResource BoolToVisibility}}">
@@ -67,6 +66,7 @@
 
                         <UniformGrid Grid.Row="1" Grid.Column="1" Columns="3" Width="720">
                             <Button Style="{StaticResource TileButton}"
+                                    behavior:TileHoverBehavior.HoverBorderColor="#4A554A"
                                     Command="{Binding NavigateToStatusCommand}" Margin="0,0,5,5">
                                 <StackPanel>
                                     <TextBlock Text="서비스 상태" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
@@ -76,6 +76,7 @@
                             </Button>
 
                             <Button Style="{StaticResource TileButton}"
+                                    behavior:TileHoverBehavior.HoverBorderColor="#446688"
                                     Command="{Binding NavigateToEventsCommand}" Margin="5,0,5,5">
                                 <StackPanel>
                                     <TextBlock Text="탐지 목록" FontSize="14" FontWeight="SemiBold"
@@ -87,6 +88,7 @@
                             </Button>
 
                             <Button Style="{StaticResource TileButton}"
+                                    behavior:TileHoverBehavior.HoverBorderColor="#444444"
                                     Command="{Binding NavigateToWhitelistCommand}" Margin="5,0,0,5">
                                 <StackPanel>
                                     <TextBlock Text="Whitelist IP" FontSize="14" FontWeight="SemiBold"
@@ -98,6 +100,7 @@
                             </Button>
 
                             <Button Style="{StaticResource TileButton}"
+                                    behavior:TileHoverBehavior.HoverBorderColor="#664444"
                                     Command="{Binding NavigateToBlacklistCommand}" Margin="0,5,5,0">
                                 <StackPanel>
                                     <TextBlock Text="Blacklist IP" FontSize="14" FontWeight="SemiBold"
@@ -109,6 +112,7 @@
                             </Button>
 
                             <Button Style="{StaticResource TileButton}"
+                                    behavior:TileHoverBehavior.HoverBorderColor="#3D3D3D"
                                     Command="{Binding NavigateToSettingsCommand}" Margin="5,5,0,0">
                                 <StackPanel>
                                     <TextBlock Text="시스템 설정" FontSize="14" FontWeight="SemiBold"
@@ -119,12 +123,22 @@
                                 </StackPanel>
                             </Button>
                         </UniformGrid>
+                        <StackPanel Grid.Row="2" Grid.Column="2">
+                            <Button Style="{StaticResource TileButton}" HorizontalAlignment="Left"
+                                    Command="{Binding ExitCommand}" Margin="50,50,0,0"
+                                    Width="70" Height="30" Padding="0"  HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center">
+                                    <TextBlock Text="IDS 종료" FontSize="12"
+                                               Foreground="{StaticResource TextMuted}" Margin="0,0,0,0"/>
+                            </Button>
+                        </StackPanel>
                     </Grid>
 
                     <ContentControl Content="{Binding CurrentPageViewModel}"
                                     Visibility="{Binding IsHomeVisible, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}"/>
                 </Grid>
             </Border>
+            
         </Grid>
     </Border>
 </Window>

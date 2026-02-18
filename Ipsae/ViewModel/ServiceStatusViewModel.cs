@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows.Input;
 using Ipsae.Service;
 
@@ -7,8 +8,9 @@ public class ServiceStatusViewModel : ViewModelBase
 {
     private readonly INavigationService _navigationService;
 
-    private string _serviceStatusText = "잎새가 동작하고 있습니다.";
-    private bool _isServiceRunning = true;
+    private string _serviceStatusText = ServiceState.Instance.IsRunning
+        ? "잎새가 동작하고 있습니다." : "잎새가 중지되었습니다.";
+    private bool _isServiceRunning = ServiceState.Instance.IsRunning;
     private int _inspectedCount;
     private int _threatCount;
     private string _interfaceName = "eno1";
@@ -21,6 +23,8 @@ public class ServiceStatusViewModel : ViewModelBase
     public ServiceStatusViewModel(INavigationService navigationService)
     {
         _navigationService = navigationService;
+
+        ServiceState.Instance.PropertyChanged += OnServiceStateChanged;
 
         NavigateHomeCommand = new RelayCommand(_ => _navigationService.NavigateHome());
         ToggleServiceCommand = new RelayCommand(_ => ToggleService());
@@ -95,5 +99,16 @@ public class ServiceStatusViewModel : ViewModelBase
 
     private void ToggleService()
     {
+        ServiceState.Instance.IsRunning = !ServiceState.Instance.IsRunning;
+    }
+
+    private void OnServiceStateChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ServiceState.IsRunning))
+        {
+            var running = ServiceState.Instance.IsRunning;
+            IsServiceRunning = running;
+            ServiceStatusText = running ? "잎새가 동작하고 있습니다." : "잎새가 중지되었습니다.";
+        }
     }
 }

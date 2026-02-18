@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using Ipsae.Service;
@@ -9,7 +10,7 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
     private ViewModelBase? _currentPageViewModel;
     private bool _isHomeVisible = true;
 
-    private string _serviceStatus = "ACTIVE";
+    private string _serviceStatus = ServiceState.Instance.StatusText;
     private string _eventCount = "1,284 검토";
     private string _eventThreats = "0 THREATS";
     private string _whitelistCount = "3개 등록";
@@ -21,6 +22,8 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
     {
         App.NavigationService = this;
 
+        ServiceState.Instance.PropertyChanged += OnServiceStateChanged;
+
         MinimizeCommand = new RelayCommand(_ =>
             Application.Current.MainWindow.WindowState = WindowState.Minimized);
         MaximizeCommand = new RelayCommand(_ =>
@@ -31,6 +34,8 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
         });
         CloseCommand = new RelayCommand(_ =>
             Application.Current.MainWindow.Hide());
+        ExitCommand = new RelayCommand(_ =>
+            Application.Current.MainWindow.Close());
 
         NavigateToStatusCommand = new RelayCommand(_ => NavigateTo("ServiceStatus"));
         NavigateToEventsCommand = new RelayCommand(_ => NavigateTo("EventList"));
@@ -42,6 +47,7 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
     public ICommand MinimizeCommand { get; }
     public ICommand MaximizeCommand { get; }
     public ICommand CloseCommand { get; }
+    public ICommand ExitCommand { get; }
     public ICommand NavigateToStatusCommand { get; }
     public ICommand NavigateToEventsCommand { get; }
     public ICommand NavigateToWhitelistCommand { get; }
@@ -123,5 +129,13 @@ public class MainWindowViewModel : ViewModelBase, INavigationService
     public void NavigateHome()
     {
         CurrentPageViewModel = null;
+    }
+
+    private void OnServiceStateChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ServiceState.StatusText))
+        {
+            ServiceStatus = ServiceState.Instance.StatusText;
+        }
     }
 }

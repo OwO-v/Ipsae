@@ -58,9 +58,9 @@
     </Style>
 
     <!-- Tile Button (Home Dashboard) -->
+    <!-- Use behavior:TileHoverBehavior.HoverBorderColor for animated per-tile hover border -->
     <Style x:Key="TileButton" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource BgCard}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Border}"/>
+        <Setter Property="Background" Value="#111111"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
@@ -69,18 +69,18 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="TileBd" Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
+                    <Border x:Name="TileBd"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}">
+                        <Border.BorderBrush>
+                            <SolidColorBrush Color="#1A1A1A"/>
+                        </Border.BorderBrush>
+                        <Border.Background>
+                            <SolidColorBrush Color="#111111"/>
+                        </Border.Background>
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                     </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="TileBd" Property="Background" Value="#141414"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
