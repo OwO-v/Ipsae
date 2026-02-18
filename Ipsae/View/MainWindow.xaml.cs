@@ -12,6 +12,9 @@ namespace Ipsae.View;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private Button? _activeNavButton;
+    private readonly List<Button> _navButtons = new();
+
     public MainWindow()
     {
         InitializeComponent();
@@ -22,14 +25,18 @@ public partial class MainWindow : Window
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
 
-        // 초기 페이지 로드
+        _navButtons.Add(StatusButton);
+        _navButtons.Add(EventButton);
+        _navButtons.Add(WhitelistButton);
+        _navButtons.Add(BlacklistButton);
+        _navButtons.Add(SettingButton);
+
+        AttachButtonClickHandlers();
+
         Dispatcher.InvokeAsync(() =>
         {
             LoadPage(0);
         }, System.Windows.Threading.DispatcherPriority.Loaded);
-
-        // 버튼 이벤트 연결
-        AttachButtonClickHandlers();
     }
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -81,15 +88,10 @@ public partial class MainWindow : Window
 
     private void AttachButtonClickHandlers()
     {
-        int buttonIndex = 0;
-        foreach (var child in SidebarGrid.Children)
+        for (int i = 0; i < _navButtons.Count; i++)
         {
-            if (child is Button button && buttonIndex < 5)
-            {
-                int pageIndex = buttonIndex;
-                button.Click += (s, e) => LoadPage(pageIndex);
-                buttonIndex++;
-            }
+            int pageIndex = i;
+            _navButtons[i].Click += (s, e) => LoadPage(pageIndex);
         }
     }
 
@@ -112,7 +114,46 @@ public partial class MainWindow : Window
             {
                 MainFrame.Content = page;
             }, System.Windows.Threading.DispatcherPriority.Background);
+
+            SetActiveNavButton(pageIndex);
         }
+    }
+
+    private void SetActiveNavButton(int index)
+    {
+        if (index < 0 || index >= _navButtons.Count)
+            return;
+
+        var activeStyle = (Style)FindResource("NavButtonActiveStyle");
+        var normalStyle = (Style)FindResource("NavButtonStyle");
+        var accentBlueBrush = (SolidColorBrush)FindResource("AccentBlueBrush");
+        var textSecondaryBrush = (SolidColorBrush)FindResource("TextSecondaryBrush");
+
+        foreach (var button in _navButtons)
+        {
+            button.Style = normalStyle;
+            
+            if (button.Content is StackPanel stackPanel && stackPanel.Children.Count > 1)
+            {
+                if (stackPanel.Children[1] is TextBlock textBlock)
+                {
+                    textBlock.Foreground = textSecondaryBrush;
+                }
+            }
+        }
+
+        var selectedButton = _navButtons[index];
+        selectedButton.Style = activeStyle;
+        
+        if (selectedButton.Content is StackPanel selectedStackPanel && selectedStackPanel.Children.Count > 1)
+        {
+            if (selectedStackPanel.Children[1] is TextBlock selectedTextBlock)
+            {
+                selectedTextBlock.Foreground = accentBlueBrush;
+            }
+        }
+
+        _activeNavButton = selectedButton;
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)

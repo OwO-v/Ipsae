@@ -6,28 +6,113 @@
       xmlns:local="clr-namespace:Ipsae.View.Pages"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="ServiceStatusPage" FontFamily="/Resource/#나눔스퀘어 네오 Regular">
+      Title="ServiceStatusPage" FontFamily="Segoe UI">
 
-    <Grid Background="White">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="40"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="30"/>
-            <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="30"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="40"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="50"/>
-        </Grid.RowDefinitions>
-        <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            <TextBlock FontSize="34" FontFamily="/Resource/#나눔스퀘어 네오 Bold" Text="서비스 상태" TextAlignment="Left" Margin="0 0 0 20"/>
-            <TextBlock FontSize="20" Text="잎새가 동작하고 있습니다." TextAlignment="Center" Margin="0 10"/>
-            <Button Content="실행 중지" Width="150" Height="40" Margin="0 20" HorizontalAlignment="Right" FontSize="16"/>
-        </StackPanel>
-        <Border Grid.Row="1" Grid.Column="3" Background="#FFE0E0E0" Width="1" Margin="0"/>
+    <Page.Resources>
+        <SolidColorBrush x:Key="BgPage" Color="#1A1A1A"/>
+        <SolidColorBrush x:Key="BgCard" Color="#222222"/>
+        <SolidColorBrush x:Key="BorderCard" Color="#2A2A2A"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#888888"/>
+        <SolidColorBrush x:Key="AccentBlue" Color="#2980B9"/>
+        <SolidColorBrush x:Key="AccentGreen" Color="#27AE60"/>
+        <SolidColorBrush x:Key="AccentRed" Color="#E74C3C"/>
+
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BgCard}"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="28,24"/>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" 
+                                CornerRadius="8" Padding="24,0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StatBadge" TargetType="Border">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,8,0,0"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource BgPage}">
+        <Grid Margin="32,28">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="24"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="서비스 상태" FontSize="18" FontWeight="Bold" 
+                               Foreground="{StaticResource TextPrimary}" Margin="0,0,0,20"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Ellipse Width="10" Height="10" Fill="{StaticResource AccentGreen}" 
+                                 Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="잎새가 동작하고 있습니다." FontSize="14" 
+                                   Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"
+                                   x:Name="ServiceStatusText"/>
+                    </StackPanel>
+
+                    <Button Content="실행 중지" Background="{StaticResource AccentRed}" 
+                            Style="{StaticResource ActionButton}" 
+                            HorizontalAlignment="Left" Margin="0,20,0,0"
+                            x:Name="ToggleServiceButton"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="지금까지" FontSize="18" FontWeight="Bold" 
+                               Foreground="{StaticResource TextPrimary}" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="검토한 통신의 수" FontSize="13" 
+                               Foreground="{StaticResource TextSecondary}"/>
+                    <Border Style="{StaticResource StatBadge}" Background="{StaticResource AccentBlue}">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="White"
+                                   x:Name="InspectedCountText">
+                            <Run Text="0"/><Run Text=" 건"/>
+                        </TextBlock>
+                    </Border>
+
+                    <TextBlock Text="발견한 공격의 수" FontSize="13" 
+                               Foreground="{StaticResource TextSecondary}" Margin="0,20,0,0"/>
+                    <Border Style="{StaticResource StatBadge}" Background="{StaticResource AccentGreen}"
+                            x:Name="AttackCountBorder">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="White"
+                                   x:Name="AttackCountText">
+                            <Run Text="0"/><Run Text=" 건"/>
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Page>
