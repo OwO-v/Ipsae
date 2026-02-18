@@ -90,4 +90,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IpsaeShared\IpsaeShared.csproj" />
+  </ItemGroup>
+
 </Project>
