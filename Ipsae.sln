@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IpsaeService", "IpsaeServic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IpsaeShared", "IpsaeShared\IpsaeShared.csproj", "{E08CA6E3-BFA2-4EAC-AF86-6243461C6D0D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IpsaeEngine", "IpsaeEngine\IpsaeEngine.vcxproj", "{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{E08CA6E3-BFA2-4EAC-AF86-6243461C6D0D}.Release|x64.Build.0 = Release|Any CPU
 		{E08CA6E3-BFA2-4EAC-AF86-6243461C6D0D}.Release|x86.ActiveCfg = Release|Any CPU
 		{E08CA6E3-BFA2-4EAC-AF86-6243461C6D0D}.Release|x86.Build.0 = Release|Any CPU
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Debug|Any CPU.Build.0 = Debug|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Debug|x64.ActiveCfg = Debug|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Debug|x64.Build.0 = Debug|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Debug|x86.ActiveCfg = Debug|Win32
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Debug|x86.Build.0 = Debug|Win32
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Release|Any CPU.ActiveCfg = Release|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Release|Any CPU.Build.0 = Release|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Release|x64.ActiveCfg = Release|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Release|x64.Build.0 = Release|x64
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Release|x86.ActiveCfg = Release|Win32
+		{47FCAEC4-F3CF-4AFF-A3C2-3AFA2BE40882}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
