@@ -1,23 +1,17 @@
-﻿// Windows 기본 헤더
-#include <windows.h>
-// WinDivert 패킷 캡처 라이브러리 헤더
+﻿#include <windows.h>
 #include <windivert.h>
-// 콘솔 출력
 #include <stdio.h>
-// _setmode, _fileno (유니코드 콘솔 출력용)
 #include <io.h>
 #include <fcntl.h>
+#include <vector>
 
-// 링커에게 WinDivert.lib 링크 지시
 #pragma comment(lib, "WinDivert.lib")
 
 // 패킷 수신 버퍼 크기 (최대 MTU + 여유)
 #define PACKET_BUFSIZE  0xFFFF
 
-// Ctrl+C 종료 플래그
 static volatile BOOL g_running = TRUE;
 
-// Ctrl+C 핸들러: 루프 종료 신호
 static BOOL WINAPI CtrlHandler(DWORD ctrlType)
 {
     if (ctrlType == CTRL_C_EVENT)
@@ -28,14 +22,12 @@ static BOOL WINAPI CtrlHandler(DWORD ctrlType)
     return FALSE;
 }
 
-// IPv4 주소(네트워크 바이트 오더)를 "A.B.C.D" 문자열로 변환
 static void FormatIPv4(UINT32 addr, char* buf, size_t bufLen)
 {
     UINT8* b = (UINT8*)&addr;
     sprintf_s(buf, bufLen, "%u.%u.%u.%u", b[0], b[1], b[2], b[3]);
 }
 
-// 프로토콜 번호를 문자열로 변환
 static const char* ProtocolName(UINT8 proto)
 {
     switch (proto)
@@ -49,23 +41,13 @@ static const char* ProtocolName(UINT8 proto)
 
 int wmain()
 {
-    // 콘솔을 UTF-16 모드로 설정 (한글 출력 깨짐 방지)
-    _setmode(_fileno(stdout), _O_U16TEXT);
+    (void)_setmode(_fileno(stdout), _O_U16TEXT);
 
     wprintf(L"=== IpsaeEngine 패킷 캡처 (WinDivert) ===\n");
     wprintf(L"Ctrl+C 로 종료\n\n");
 
-    // Ctrl+C 핸들러 등록
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
-    // WinDivertOpen: 패킷 캡처 핸들을 엶
-    //   인자1: "ip" = IPv4 패킷 전부 매치하는 필터
-    //   인자2: WINDIVERT_LAYER_NETWORK = 네트워크 계층 (송수신 모두)
-    //   인자3: 0 = 필터 우선순위 (기본값)
-    //   인자4: WINDIVERT_FLAG_SNIFF = 스니핑 모드
-    //          패킷을 가로채지 않고 복사만 함 (네트워크에 영향 없음)
-    //          이 플래그 없으면 패킷이 실제로 가로채져서
-    //          WinDivertSend()로 재주입해야 네트워크가 정상 동작함
     HANDLE handle = WinDivertOpen("ip", WINDIVERT_LAYER_NETWORK, 0,
         WINDIVERT_FLAG_SNIFF | WINDIVERT_FLAG_RECV_ONLY);
 
@@ -87,36 +69,26 @@ int wmain()
         L"방향", L"프로토콜", L"출발지", L"목적지", L"크기");
     wprintf(L"───────────────────────────────────────────────────────────────────\n");
 
-    // 패킷 수신 버퍼
-    unsigned char packet[PACKET_BUFSIZE];
-    // 패킷의 메타 정보 (방향, 인터페이스 등)
+    std::vector<unsigned char> packet(PACKET_BUFSIZE);
+
     WINDIVERT_ADDRESS addr;
     UINT recvLen = 0;
 
     while (g_running)
     {
-        // WinDivertRecv: 필터에 매치된 패킷 하나를 수신
-        //   인자1: handle = WinDivertOpen에서 받은 핸들
-        //   인자2: packet = 수신 버퍼 (여기에 원시 IP 패킷이 들어옴)
-        //   인자3: sizeof(packet) = 버퍼 크기
-        //   인자4: &recvLen = [출력] 실제 수신된 바이트 수
-        //   인자5: &addr = [출력] 패킷 메타정보 (방향, 인터페이스 등)
-        if (!WinDivertRecv(handle, packet, sizeof(packet), &recvLen, &addr))
+        if (!WinDivertRecv(handle, packet.data(), packet.size(), &recvLen, &addr))
         {
-            // Ctrl+C로 종료 시 핸들이 닫히면서 에러 발생 -> 정상 종료
             if (!g_running) break;
             continue;
         }
 
-        // WinDivertHelperParsePacket: 원시 패킷에서 각 헤더의 포인터를 추출
-        //   필요한 헤더만 받고 나머지는 NULL로 무시 가능
-        PWINDIVERT_IPHDR  ipHdr  = NULL;  // IPv4 헤더
-        PWINDIVERT_TCPHDR tcpHdr = NULL;  // TCP 헤더
-        PWINDIVERT_UDPHDR udpHdr = NULL;  // UDP 헤더
-        UINT8 protocol = 0;               // 프로토콜 번호 (6=TCP, 17=UDP, 1=ICMP)
+        PWINDIVERT_IPHDR  ipHdr  = NULL;
+        PWINDIVERT_TCPHDR tcpHdr = NULL;
+        PWINDIVERT_UDPHDR udpHdr = NULL;
+        UINT8 protocol = 0;
 
         WinDivertHelperParsePacket(
-            packet, recvLen,
+            packet.data(), recvLen,
             &ipHdr,     // [출력] IPv4 헤더 포인터
             NULL,       // IPv6 헤더 (불필요 - IPv4만 캡처)
             &protocol,  // [출력] 상위 프로토콜 번호
@@ -130,7 +102,7 @@ int wmain()
             NULL        // 다음 헤더 길이 (불필요)
         );
 
-        // IPv4 헤더가 없으면 건너뜀 (정상적이라면 항상 있음)
+        
         if (ipHdr == NULL) continue;
 
         // 방향 판별: addr.Outbound == 1이면 송신, 0이면 수신
@@ -163,7 +135,7 @@ int wmain()
         if (srcPort != 0)
         {
             // TCP/UDP: IP:포트 형식
-            wprintf(L"[%s] %hs %hs:%-5u -> %hs:%-5u  len=%u\n",
+            (L"[%s] %hs %hs:%-5u -> %hs:%-5u  len=%u\n",
                 dir,
                 ProtocolName(protocol),
                 srcStr, srcPort,
