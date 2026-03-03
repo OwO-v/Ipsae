@@ -1,20 +1,13 @@
+ï»¿#include "pch.h"
 #include "DbInsert.h"
 #include "sqlite3.h"
-#include <stdio.h>
-#include <unordered_set>
-#include <string>
-#include "Common.h"
 
 #pragma comment(lib, "sqlite3.lib")
 
-static int CheckDbTableList(sqlite3* db);
+#pragma region values
 
-static int GetThreatHostList(sqlite3* db, std::unordered_set<std::string>& hosts);
-
-// DB Insert Thread¿¡¼­ »ç¿ëÇÒ DB Insert QueueÀÔ´Ï´Ù.
 static ThreadSafeQueue<std::string> s_dbInsertQueue;
 
-// DB¿¡ Á¸ÀçÇØ¾ß ÇÏ´Â Table ¸ñ·ÏÀÔ´Ï´Ù. ÀÌ ¸ñ·Ï¿¡ ¾ø´Â TableÀÌ Á¸ÀçÇÒ °æ¿ì DB À¯È¿¼º °Ë»ç ½ÇÆĞ·Î °£ÁÖÇÕ´Ï´Ù.
 static const char* DB_LIST[] = {
 	"tb_threat_host",
 	"tb_access_host",
@@ -22,20 +15,23 @@ static const char* DB_LIST[] = {
 	"tb_config_host",
 };
 
-/// <summary>
-/// µ¥ÀÌÅÍº£ÀÌ½º »ğÀÔ ÀÛ¾÷À» Å¥¿¡ Ãß°¡ÇÕ´Ï´Ù.
-/// </summary>
-/// <param name="data">»ğÀÔÇÒ µ¥ÀÌÅÍ ¹®ÀÚ¿­.</param>
+#pragma endregion
+
+#pragma region Forward Declaration
+
+static int CheckDbTableList(sqlite3* db);
+static int GetThreatHostList(sqlite3* db, std::unordered_set<std::string>& hosts);
+static unsigned int StartDbInsert(HANDLE hReadyEvent);
+
+#pragma endregion
+
+#pragma region functions
+
 void EnqueueDbInsert(const std::string& data)
 {
 	s_dbInsertQueue.Push(data);
 }
 
-/// <summary>
-/// ÆĞÅ¶ Ä¸Ã³ ½º·¹µå¸¦ ½ÃÀÛÇÏ´Â ½º·¹µå ÁøÀÔÁ¡ ÇÔ¼öÀÔ´Ï´Ù.
-/// </summary>
-/// <param name="param">THREAD_CONTEXT ±¸Á¶Ã¼¿¡ ´ëÇÑ Æ÷ÀÎÅÍ·Î, ½º·¹µå ÄÁÅØ½ºÆ® Á¤º¸¸¦ Æ÷ÇÔÇÕ´Ï´Ù.</param>
-/// <returns>StartDbInsert ÇÔ¼öÀÇ ¹İÈ¯ °ªÀÔ´Ï´Ù.</returns>
 unsigned int __stdcall StartDbInsertThread(void* param)
 {
 	THREAD_CONTEXT* context = (THREAD_CONTEXT*)param;
@@ -43,12 +39,92 @@ unsigned int __stdcall StartDbInsertThread(void* param)
 	return StartDbInsert(context->hReadyEvent);
 }
 
-/// <summary>
-/// µ¥ÀÌÅÍº£ÀÌ½º¿¡ À§Çù È£½ºÆ® Á¤º¸¸¦ »ğÀÔÇÏ´Â ½º·¹µå ÇÔ¼öÀÔ´Ï´Ù.
-/// </summary>
-/// <param name="hReadyEvent">½º·¹µå°¡ ÁØºñµÇ¾úÀ½À» ¾Ë¸®´Â ÀÌº¥Æ® ÇÚµéÀÔ´Ï´Ù.</param>
-/// <returns>¼º°ø ½Ã True, ½ÇÆĞ ½Ã False¸¦ ¹İÈ¯ÇÕ´Ï´Ù.</returns>
-bool StartDbInsert(HANDLE hReadyEvent)
+static int CheckDbTableList(sqlite3* db)
+{
+	// ì´ˆê¸°í™”
+	sqlite3_stmt* stmt = NULL;
+
+	// DB ìœ íš¨ì„± ê²€ì‚¬
+	if (db == NULL)
+	{
+		wprintf(L"[FAIL][DbInsert] Can't check DB table list: DB is NULL\n");
+		return 1;
+	}
+
+	// SQL ì¤€ë¹„
+	const char* selectSql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?;";
+	int rc = sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL);
+	if (rc != SQLITE_OK)
+	{
+		wprintf(L"[FAIL][DbInsert] SELECT: %hs\n", sqlite3_errmsg(db));
+		sqlite3_finalize(stmt);
+		return 1;
+	}
+
+	// SQL ì‹¤í–‰ ê²°ê³¼ ë° ê²°ê³¼ ì²˜ë¦¬
+	for (auto tableName : DB_LIST)
+	{		
+		sqlite3_bind_text(stmt, 1, tableName, -1, SQLITE_STATIC);
+		sqlite3_step(stmt);
+
+		int exists = sqlite3_column_int(stmt, 0);
+		if (exists == 0)
+		{
+			wprintf(L"[FAIL][DbInsert] í…Œì´ë¸” í™•ì¸ ì‹¤íŒ¨: %hs\n", tableName);
+			sqlite3_finalize(stmt);
+
+			return 1;
+		}
+
+		// ë‹¤ìŒ ì‘ì—… ì¤€ë¹„
+		sqlite3_reset(stmt);
+	}
+	
+	// SQL ë¬¸ ì¢…ë£Œ ë° ê²°ê³¼ ë°˜í™˜
+	sqlite3_finalize(stmt);
+	return 0;
+}
+
+static int GetThreatHostList(sqlite3* db, std::unordered_set<std::string> &hosts)
+{
+	// ì´ˆê¸°í™”
+	sqlite3_stmt* stmt = NULL;
+	std::unordered_set<std::string> threat_hosts;
+
+	// DB ìœ íš¨ì„± ê²€ì‚¬
+	if (db == NULL)
+	{
+		wprintf(L"[FAIL][DbInsert] Can't check DB table list: DB is NULL\n");
+		return 1;
+	}
+
+	// SQL ì¤€ë¹„
+	const char* selectSql = "SELECT host FROM tb_threat_host;";
+	int rc = sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL);
+	if (rc != SQLITE_OK)
+	{
+		wprintf(L"[FAIL][DbInsert] SELECT: %hs\n", sqlite3_errmsg(db));
+		sqlite3_finalize(stmt);
+		return 1;
+	}
+
+	// SQL ì‹¤í–‰ ë° ê²°ê³¼ ì²˜ë¦¬
+	while (sqlite3_step(stmt) == SQLITE_ROW)
+	{
+		const char* host = (const char*)sqlite3_column_text(stmt, 0);
+		if (host != NULL)
+			threat_hosts.insert(host);
+	}
+
+	// SQL ë¬¸ ì¢…ë£Œ
+	sqlite3_finalize(stmt);
+
+	// ê²°ê³¼ ë°˜í™˜ - ì™„ë£Œ ì‹œ ì¡°íšŒëœ í˜¸ìŠ¤íŠ¸ ëª©ë¡ì„ ì°¸ì¡° ë§¤ê°œë³€ìˆ˜ì— ì €ì¥
+	hosts = std::move(threat_hosts);
+	return 0;
+}
+
+static unsigned int StartDbInsert(HANDLE hReadyEvent)
 {
 	sqlite3* db = NULL;
 	sqlite3_stmt* stmt = NULL;
@@ -64,124 +140,33 @@ bool StartDbInsert(HANDLE hReadyEvent)
 		return 1;
 	}
 
-    // Table Á¡°Ë
-	if (CheckDbTableList(db) < 0)
+	// Table ì ê²€
+	if (CheckDbTableList(db) > 0)
 	{
-		wprintf(L"[FAIL][DbInsert] Å×ÀÌºí À¯È¿¼º °Ë»ç ½ÇÆĞ\n");
+		wprintf(L"[FAIL][DbInsert] í…Œì´ë¸” í™•ì¸ ì‹¤íŒ¨\n");
 		sqlite3_close(db);
 		return 1;
 	}
 
-	// À¯ÇØ IP ¸ñ·Ï ¼öÁı
-	if (GetThreatHostList(db, threat_hosts) < 0)
+	// ìœ í•´ IP ëª©ë¡ ìˆ˜ì§‘
+	if (GetThreatHostList(db, threat_hosts) > 0)
 	{
-		wprintf(L"[FAIL][DbInsert] À§Çù È£½ºÆ® ¸ñ·Ï Á¶È¸ ½ÇÆĞ\n");
+		wprintf(L"[FAIL][DbInsert] ìœ í•´ í˜¸ìŠ¤íŠ¸ ëª©ë¡ ì¡°íšŒ ì‹¤íŒ¨\n");
 		sqlite3_close(db);
 		return 1;
 	}
 
-	// Main ¿¡°Ô Thread °¡ ÁØºñµÇ¾úÀ½À» ¾Ë¸²
+	// Main ì—ê²Œ Thread ê°€ ì¤€ë¹„ë˜ì—ˆìŒì„ ì•Œë¦¼
 	SetEvent(hReadyEvent);
 
-	//DB Insert Queue¿¡¼­ Pop ÇÏ¿© DB¿¡ ÀúÀå
+	//DB Insert Queueì—ì„œ Pop í•˜ì—¬ DBì— ì €ì¥
 	while (s_dbInsertQueue.WaitAndPop(data))
 	{
-		//TODO: DB¿¡ µ¥ÀÌÅÍ »ğÀÔ ·ÎÁ÷ Ãß°¡
+		//TODO: DBì— ë°ì´í„° ì‚½ì… ë¡œì§ ì¶”ê°€
 	}
+
+	sqlite3_close(db);
+	return 0;
 }
 
-/// <summary>
-/// Table Á¸Àç ¿©ºÎ È®ÀÎÇÕ´Ï´Ù.
-/// </summary>
-/// <param name="db">Open µÈ SQLite DB ÇÚµé</param>
-/// <returns>¼º°ø ½Ã 1, ½ÇÆĞ ½Ã -1</returns>
-static int CheckDbTableList(sqlite3* db)
-{
-	// ÃÊ±âÈ­
-	sqlite3_stmt* stmt = NULL;
-
-	// DB À¯È¿¼º °Ë»ç
-	if (db == NULL)
-	{
-		wprintf(L"[FAIL][DbInsert] Can't check DB table list: DB is NULL\n");
-		return -1;
-	}
-
-	// SQL ÁØºñ
-	const char* selectSql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?;";
-	int rc = sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL);
-	if (rc != SQLITE_OK)
-	{
-		wprintf(L"[FAIL][DbInsert] SELECT: %hs\n", sqlite3_errmsg(db));
-		sqlite3_finalize(stmt);
-		return -1;
-	}
-
-	// SQL ½ÇÇà °á°ú ¹× °á°ú Ã³¸®
-	for (auto tableName : DB_LIST)
-	{		
-		sqlite3_bind_text(stmt, 1, tableName, -1, SQLITE_STATIC);
-		sqlite3_step(stmt);
-
-		int exists = sqlite3_column_int(stmt, 0);
-		if (exists == 0)
-		{
-			wprintf(L"[FAIL][DbInsert] Å×ÀÌºí È®ÀÎ ½ÇÆĞ: %hs\n", tableName);
-			sqlite3_finalize(stmt);
-
-			return -1;
-		}
-
-		// ´ÙÀ½ ÀÛ¾÷ ÁØºñ
-		sqlite3_reset(stmt);
-	}
-	
-	// SQL ¹® Á¾·á ¹× °á°ú ¹İÈ¯
-	sqlite3_finalize(stmt);
-	return 1;
-}
-
-/// <summary>
-/// µ¥ÀÌÅÍº£ÀÌ½º¿¡¼­ À§Çù È£½ºÆ® ¸ñ·ÏÀ» Á¶È¸ÇÕ´Ï´Ù.
-/// </summary>
-/// <param name="db">SQLite µ¥ÀÌÅÍº£ÀÌ½º ¿¬°á Æ÷ÀÎÅÍ</param>
-/// <param name="hosts">Á¶È¸µÈ À§Çù È£½ºÆ® ¸ñ·ÏÀ» ÀúÀåÇÒ unordered_set ÂüÁ¶</param>
-/// <returns>¼º°ø ½Ã 1, ½ÇÆĞ ½Ã -1</returns>
-static int GetThreatHostList(sqlite3* db, std::unordered_set<std::string> &hosts)
-{
-	// ÃÊ±âÈ­
-	sqlite3_stmt* stmt = NULL;
-	std::unordered_set<std::string> threat_hosts;
-
-	// DB À¯È¿¼º °Ë»ç
-	if (db == NULL)
-	{
-		wprintf(L"[FAIL][DbInsert] Can't check DB table list: DB is NULL\n");
-		return -1;
-	}
-
-	// SQL ÁØºñ
-	const char* selectSql = "SELECT host FROM tb_threat_host;";
-	int rc = sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL);
-	if (rc != SQLITE_OK)
-	{
-		wprintf(L"[FAIL][DbInsert] SELECT: %hs\n", sqlite3_errmsg(db));
-		sqlite3_finalize(stmt);
-		return -1;
-	}
-
-	// SQL ½ÇÇà ¹× °á°ú Ã³¸®
-	while (sqlite3_step(stmt) == SQLITE_ROW)
-	{
-		const char* host = (const char*)sqlite3_column_text(stmt, 0);
-		if (host != NULL)
-			threat_hosts.insert(host);
-	}
-
-	// SQL ¹® Á¾·á
-	sqlite3_finalize(stmt);
-
-	// °á°ú ¹İÈ¯ - ¿Ï·á ½Ã Á¶È¸µÈ È£½ºÆ® ¸ñ·ÏÀ» ÂüÁ¶ ¸Å°³º¯¼ö¿¡ ÀúÀå, ½ÇÆĞ ½Ã -1 ¹İÈ¯ÇÏ¸ç ÂüÁ¶ ¸Å°³º¯¼ö´Â ºñ¾îÀÖÀ½
-	hosts = std::move(threat_hosts);
-	return 1;
-}
+#pragma endregion

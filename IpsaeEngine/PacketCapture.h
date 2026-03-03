@@ -1,9 +1,6 @@
 ﻿#pragma once
-#include <Windows.h>
 #include "Common.h"
 
-
-bool StartPacketCapture(HANDLE hReadyEvent);
 
 void StopPacketCapture();
 

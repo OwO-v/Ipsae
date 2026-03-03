@@ -1,10 +1,7 @@
-﻿#include <windows.h>
-#include <process.h>
-#include <stdio.h>
-#include <io.h>
-#include <fcntl.h>
-#include "PacketCapture.h"
+﻿#include "pch.h"
 #include "Common.h"
+#include "DbInsert.h"
+#include "PacketCapture.h"
 
 #define THREAD_COUNT 4
 
@@ -40,7 +37,7 @@ int wmain()
     THREAD_CONTEXT threadContexts[THREAD_COUNT] = {};
     THREAD_FUNC threadFunctions[THREAD_COUNT] = { 
         WorkerThread,
-        WorkerThread, 
+        StartDbInsertThread, 
         WorkerThread, 
         StartPacketCaptureThread
     };
@@ -53,21 +50,26 @@ int wmain()
         hThreads[i] = (HANDLE)_beginthreadex(NULL, 0, threadFunctions[i], &threadContexts[i], 0, NULL);
 
 		// Thread 생성 실패 시 에러 메시지 출력 후 종료
-        if (!hThreads[i])
+        if (!hThreads[i] || !threadContexts[i].hReadyEvent)
         {
             wprintf(L"[FAIL][main] CreateThread: error %lu\n", GetLastError());
-            CloseHandle(threadContexts[i].hReadyEvent);
+            for (int j = 0; j < i; j++)
+                CloseHandle(threadContexts[j].hReadyEvent);
+            for (int j = 0; j < i; j++)
+                CloseHandle(hThreads[j]);
             return 1;
         }
 
-		// Thread 준비될 때까지 대기 (최대 10초)
+        // Thread 준비될 때까지 대기 (최대 10초)
         DWORD result = WaitForSingleObject(threadContexts[i].hReadyEvent, 10000);
-        CloseHandle(threadContexts[i].hReadyEvent);
+		CloseHandle(threadContexts[i].hReadyEvent);
 
         // Thread 준비 실패 시 에러 메시지 출력 후 종료
         if (result != WAIT_OBJECT_0)
         {
             wprintf(L"[FAIL][main] WaitForSingleObject: error %lu\n", GetLastError());
+            for (int j = 0; j < i; j++)
+                CloseHandle(hThreads[j]);
             return 1;
 		}
         
@@ -83,7 +85,10 @@ int wmain()
     /* ============================== */
 
     for (int i = 0; i < THREAD_COUNT; i++)
-        CloseHandle(hThreads[i]);
+    {
+		if (hThreads[i])
+            CloseHandle(hThreads[i]);
+    }
 
     wprintf(L"\n[OK][main] Engine 종료\n");
     return 0;
