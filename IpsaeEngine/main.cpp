@@ -55,7 +55,7 @@ int wmain()
 		// Thread 생성 실패 시 에러 메시지 출력 후 종료
         if (!hThreads[i])
         {
-            wprintf(L"[FAIL] CreateThread: error %lu\n", GetLastError());
+            wprintf(L"[FAIL][main] CreateThread: error %lu\n", GetLastError());
             CloseHandle(threadContexts[i].hReadyEvent);
             return 1;
         }
@@ -67,7 +67,7 @@ int wmain()
         // Thread 준비 실패 시 에러 메시지 출력 후 종료
         if (result != WAIT_OBJECT_0)
         {
-            wprintf(L"[FAIL] WaitForSingleObject: error %lu\n", GetLastError());
+            wprintf(L"[FAIL][main] WaitForSingleObject: error %lu\n", GetLastError());
             return 1;
 		}
         
@@ -85,6 +85,6 @@ int wmain()
     for (int i = 0; i < THREAD_COUNT; i++)
         CloseHandle(hThreads[i]);
 
-    wprintf(L"\n[OK] 패킷 캡처 종료\n");
+    wprintf(L"\n[OK][main] Engine 종료\n");
     return 0;
 }

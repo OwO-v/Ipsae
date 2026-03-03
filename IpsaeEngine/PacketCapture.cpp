@@ -71,7 +71,7 @@ bool StartPacketCapture(HANDLE hReadyEvent)
     if (handle == INVALID_HANDLE_VALUE)
     {
         DWORD err = GetLastError();
-        wprintf(L"[FAIL] WinDivertOpen: error %lu\n", err);
+        wprintf(L"[FAIL][PacketCapture] WinDivertOpen: error %lu\n", err);
         if (err == ERROR_ACCESS_DENIED)
             wprintf(L"       -> 관리자 권한으로 실행하세요.\n");
         else if (err == 2)
@@ -84,7 +84,7 @@ bool StartPacketCapture(HANDLE hReadyEvent)
 	// Main 에게 Thread 가 준비되었음을 알림
     SetEvent(hReadyEvent);
 
-    wprintf(L"[OK] 패킷 캡처 시작\n");
+    wprintf(L"[OK][PacketCapture] 패킷 캡처 시작\n");
     wprintf(L"%-5s %-5s %-21s    %-21s %s\n",
         L"방향", L"프로토콜", L"출발지", L"목적지", L"크기");
     wprintf(L"───────────────────────────────────────────────────────────────────\n");
@@ -92,7 +92,7 @@ bool StartPacketCapture(HANDLE hReadyEvent)
     unsigned char* packet = (unsigned char*)malloc(PACKET_BUFSIZE);
     if (!packet) 
     {
-        wprintf(L"[FAIL] 패킷 버퍼 할당 실패\n");
+        wprintf(L"[FAIL][PacketCapture] 패킷 버퍼 할당 실패\n");
         WinDivertClose(handle);
 		return false;
     }
@@ -158,20 +158,20 @@ bool StartPacketCapture(HANDLE hReadyEvent)
     }
     catch (...)
     {
-        wprintf(L"[ERROR] 패킷 수신 중 예외 발생\n");
+        wprintf(L"[ERROR][PacketCapture] 패킷 수신 중 예외 발생\n");
     }
     
     free(packet);
 
     if (WinDivertShutdown(handle, WINDIVERT_SHUTDOWN_BOTH))
-        wprintf(L"[OK] WinDivert Shutdown 성공\n");
+        wprintf(L"[OK][PacketCapture] WinDivert Shutdown 성공\n");
     else
-        wprintf(L"[FAIL] WinDivertShutdown: error %lu\n", GetLastError());
+        wprintf(L"[FAIL][PacketCapture] WinDivertShutdown: error %lu\n", GetLastError());
 
     if (WinDivertClose(handle))
-        wprintf(L"[OK] WinDivert 핸들 닫기 성공\n");
+        wprintf(L"[OK][PacketCapture] WinDivert 핸들 닫기 성공\n");
     else
-        wprintf(L"[FAIL] WinDivertClose: error %lu\n", GetLastError());
+        wprintf(L"[FAIL][PacketCapture] WinDivertClose: error %lu\n", GetLastError());
 
     return true;
 }

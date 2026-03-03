@@ -84,7 +84,7 @@ bool StartDbInsert(HANDLE hReadyEvent)
 	SetEvent(hReadyEvent);
 
 	//DB Insert Queue에서 Pop 하여 DB에 저장
-	while (g_dbInsertQueue.WaitAndPop(data))
+	while (s_dbInsertQueue.WaitAndPop(data))
 	{
 		//TODO: DB에 데이터 삽입 로직 추가
 	}
