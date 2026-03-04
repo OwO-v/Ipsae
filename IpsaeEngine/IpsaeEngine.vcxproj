@@ -165,6 +165,7 @@ copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"</Command>
     <ClCompile Include="PacketCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Models.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DbInsert.h" />

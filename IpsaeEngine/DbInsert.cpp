@@ -7,13 +7,14 @@
 
 #pragma region Variables
 
-static ThreadSafeQueue<DB_INSERT_DATA> s_dbInsertQueue;
+static ThreadSafeQueue<DB_INSERT_BATCH> s_dbInsertQueue;
 
 static const char* DB_LIST[] = {
 	"tb_threat_host",
-	"tb_access_host",
-	"tb_detect_proc",
-	"tb_config_host",
+	"tb_network_log",
+	"tb_dns_log",
+	"tb_process_log",
+	"tb_user_rule"
 };
 
 #pragma endregion
@@ -21,14 +22,15 @@ static const char* DB_LIST[] = {
 #pragma region Forward declaration
 
 static int CheckDbTableList(sqlite3* db);
-static int GetThreatHostList(sqlite3* db, std::unordered_set<std::string>& hosts);
+static int GetThreatHostList(sqlite3* db, std::unordered_set<UINT32>& hosts);
+static int BatchInsertLog(sqlite3* db, DB_INSERT_BATCH& data);
 static unsigned int StartDbInsert(HANDLE hReadyEvent);
 
 #pragma endregion
 
 #pragma region Functions
 
-void EnqueueDbInsert(const DB_INSERT_DATA& data)
+void EnqueueDbInsert(const DB_INSERT_BATCH& data)
 {
 	s_dbInsertQueue.Push(data);
 }
@@ -57,8 +59,8 @@ static int CheckDbTableList(sqlite3* db)
 	}
 
 	// SQL 준비
-	const char* selectSql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?;";
-	int rc = sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL);
+	const char* queryString = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?;";
+	int rc = sqlite3_prepare_v2(db, queryString, -1, &stmt, NULL);
 	if (rc != SQLITE_OK)
 	{
 		wprintf(L"[FAIL][DbInsert] SELECT: %hs\n", sqlite3_errmsg(db));
@@ -83,6 +85,7 @@ static int CheckDbTableList(sqlite3* db)
 
 		// 다음 작업 준비
 		sqlite3_reset(stmt);
+		sqlite3_clear_bindings(stmt);
 	}
 	
 	// SQL 문 종료 및 결과 반환
@@ -90,7 +93,7 @@ static int CheckDbTableList(sqlite3* db)
 	return 0;
 }
 
-static int GetThreatHostList(sqlite3* db, std::unordered_set<UINT32> &hosts)
+static int GetThreatHostList(sqlite3* db, std::unordered_set<UINT32>& hosts)
 {
 	// 초기화
 	sqlite3_stmt* stmt = NULL;
@@ -104,8 +107,8 @@ static int GetThreatHostList(sqlite3* db, std::unordered_set<UINT32> &hosts)
 	}
 
 	// SQL 준비
-	const char* selectSql = "SELECT host_ip FROM tb_threat_host WHERE host_type = 0 AND is_valid = 1;";
-	int rc = sqlite3_prepare_v2(db, selectSql, -1, &stmt, NULL);
+	const char* queryString = "SELECT host_ip FROM tb_threat_host WHERE host_type = 0 AND is_valid = 1;";
+	int rc = sqlite3_prepare_v2(db, queryString, -1, &stmt, NULL);
 	if (rc != SQLITE_OK)
 	{
 		wprintf(L"[FAIL][DbInsert] SELECT: %hs\n", sqlite3_errmsg(db));
@@ -128,12 +131,127 @@ static int GetThreatHostList(sqlite3* db, std::unordered_set<UINT32> &hosts)
 	return 0;
 }
 
+static int BatchInsertLog(sqlite3* db, DB_INSERT_BATCH& data)
+{
+	// 초기화
+	sqlite3_stmt* stmtNetwork = NULL;
+	sqlite3_stmt* stmtProcess = NULL;
+
+	// DB Query 준비
+	const char* queryNetwork =
+		"INSERT INTO tb_network_log "
+		"(direction, protocol, remote_ip, remote_port, local_port, length, is_threat, timestamp) "
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+
+	const char* queryProcess =
+		"INSERT INTO tb_process_log "
+		"(network_idx, pid, ppid, proc_name, proc_path, proc_user, proc_create, timestamp) "
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+
+	// SQL 준비
+	if (sqlite3_prepare_v2(db, queryNetwork, -1, &stmtNetwork, NULL) != SQLITE_OK)
+	{
+		wprintf(L"[FAIL][DbInsert] INSERT Network Log: %hs\n", sqlite3_errmsg(db));
+		return 1;
+	}
+
+	if (sqlite3_prepare_v2(db, queryProcess, -1, &stmtProcess, NULL) != SQLITE_OK)
+	{
+		wprintf(L"[FAIL][DbInsert] INSERT Process Log: %hs\n", sqlite3_errmsg(db));
+		sqlite3_finalize(stmtNetwork);
+		return 1;
+	}
+
+	// 트랜잭션 시작
+	sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+
+	// 데이터 배치 삽입
+	for (auto & item : data)
+	{
+		// 네트워크 로그 정보
+		NETWORK_LOG net = item.network;
+
+		// SQL 바인딩
+		sqlite3_bind_int(stmtNetwork, 1, net.direction);
+		sqlite3_bind_int(stmtNetwork, 2, net.protocol);
+		sqlite3_bind_int(stmtNetwork, 3, net.remoteIp);
+		sqlite3_bind_int(stmtNetwork, 4, net.remotePort);
+		sqlite3_bind_int(stmtNetwork, 5, net.localPort);
+		sqlite3_bind_int(stmtNetwork, 6, net.length);
+		sqlite3_bind_int(stmtNetwork, 7, net.isThreat);
+		sqlite3_bind_int(stmtNetwork, 8, net.timestamp);
+
+		// SQL 실행
+		if (sqlite3_step(stmtNetwork) != SQLITE_DONE)
+		{
+			wprintf(L"[FAIL][DbInsert] INSERT Network Log: %hs\n", sqlite3_errmsg(db));
+			sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+			sqlite3_finalize(stmtNetwork);
+			sqlite3_finalize(stmtProcess);
+			return 1;
+		}
+		
+		// 유해하지 않은 네트워크 로그는 프로세스 로그 저장하지 않음
+		if (!net.isThreat)
+		{
+			sqlite3_reset(stmtNetwork);
+			sqlite3_clear_bindings(stmtNetwork);
+			continue;
+		}
+
+		// 방금 삽입한 네트워크 로그의 PK 값 조회
+		int networkIdx = (int)sqlite3_last_insert_rowid(db);
+
+		// 프로세스 로그 정보
+		int proc_size = item.processes.size();
+		for (size_t i = 0; i < proc_size; i++)
+		{
+			// SQL 바인딩
+			sqlite3_bind_int(stmtProcess, 1, networkIdx);
+			sqlite3_bind_int(stmtProcess, 2, item.processes[i].pid);
+			sqlite3_bind_int(stmtProcess, 3, item.processes[i].ppid);
+			sqlite3_bind_text(stmtProcess, 4, item.processes[i].procName.c_str(), -1, SQLITE_STATIC);
+			sqlite3_bind_text(stmtProcess, 5, item.processes[i].procPath.c_str(), -1, SQLITE_STATIC);
+			sqlite3_bind_text(stmtProcess, 6, item.processes[i].procUser.c_str(), -1, SQLITE_STATIC);
+			sqlite3_bind_int(stmtProcess, 7, item.processes[i].procCreate);
+			sqlite3_bind_int(stmtProcess, 8, item.processes[i].timestamp);
+
+			// SQL 실행
+			if (sqlite3_step(stmtProcess) != SQLITE_DONE)
+			{
+				wprintf(L"[FAIL][DbInsert] INSERT Process Log: %hs\n", sqlite3_errmsg(db));
+				sqlite3_exec(db, "ROLLBACK;", NULL, NULL, NULL);
+				sqlite3_finalize(stmtNetwork);
+				sqlite3_finalize(stmtProcess);
+				return 1;
+			}
+
+			// Process 다음 작업 준비
+			sqlite3_reset(stmtProcess);
+			sqlite3_clear_bindings(stmtProcess);
+		}
+
+		// Network 다음 작업 준비
+		sqlite3_reset(stmtNetwork);
+		sqlite3_clear_bindings(stmtNetwork);
+	}
+
+	// 트랜잭션 커밋
+	sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+	
+	// SQL 문 종료
+	sqlite3_finalize(stmtNetwork);
+	sqlite3_finalize(stmtProcess);
+
+	return 0;
+}
+
 static unsigned int StartDbInsert(HANDLE hReadyEvent)
 {
 	sqlite3* db = NULL;
-	sqlite3_stmt* stmt = NULL;
+
 	std::unordered_set<UINT32> threat_hosts;
-	DB_INSERT_DATA data;
+	DB_INSERT_BATCH data;
 
 	// DB Open
 	int rc = sqlite3_open("ipsaedb.db", &db);
@@ -166,9 +284,14 @@ static unsigned int StartDbInsert(HANDLE hReadyEvent)
 	//DB Insert Queue에서 Pop 하여 DB에 저장
 	while (s_dbInsertQueue.WaitAndPop(data))
 	{
-		//TODO: DB에 데이터 삽입 로직 추가
+		if (BatchInsertLog(db, data) > 0)
+		{
+			wprintf(L"[FAIL][DbInsert] 로그 배치 삽입 실패\n");
+			continue;
+		}
 	}
 
+	// DB Close 및 종료
 	sqlite3_close(db);
 	return 0;
 }

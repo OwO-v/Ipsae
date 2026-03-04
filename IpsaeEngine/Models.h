@@ -76,3 +76,5 @@ struct DB_INSERT_DATA
     NETWORK_LOG network;
     std::vector<PROCESS_LOG> processes;
 };
+
+typedef std::vector<DB_INSERT_DATA> DB_INSERT_BATCH;
