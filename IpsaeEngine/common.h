@@ -1,6 +1,28 @@
 #pragma once
 #include "pch.h"
 
+
+enum ENGINE_STATUS
+{
+	ENGINE_INIT,
+	ENGINE_RUNNING,
+	ENGINE_STOPPING,
+	ENGINE_STOPPED
+};
+
+struct ENGINE_STATE
+{
+	// 엔진 전체 상태
+	ENGINE_STATUS status{ ENGINE_INIT };
+
+	// 각 모듈의 실행 상태 플래그
+	std::atomic<bool> packetCaptureRunning{ false };
+	std::atomic<bool> inspectorRunning{ false };
+	std::atomic<bool> dbInsertRunning{ false };
+	std::atomic<bool> ipcToolRunning{ false };
+};
+
+
 // =============================================================================================
 // Thread
 // =============================================================================================
@@ -12,6 +34,7 @@ struct THREAD_CONTEXT
 {
 	int ThreadId;
 	HANDLE hReadyEvent;
+	ENGINE_STATE* state;
 };
 
 /// <summary>
