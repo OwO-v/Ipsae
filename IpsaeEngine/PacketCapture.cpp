@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "PacketCapture.h"
 #include <windivert.h>
 
@@ -10,13 +10,15 @@
 
 static std::atomic<bool> s_running{ false };
 
+static HANDLE s_handle = INVALID_HANDLE_VALUE;
+
 #pragma endregion
 
 #pragma region Forward declaration
 
 static void FormatIPv4(UINT32 addr, char* buf, size_t bufLen);
 static const char* ProtocolName(UINT8 proto);
-static unsigned int StartPacketCapture(HANDLE hReadyEvent);
+//static unsigned int StartPacketCapture(HANDLE hReadyEvent);
 
 #pragma endregion
 
@@ -32,6 +34,9 @@ unsigned int __stdcall StartPacketCaptureThread(void* param)
 void StopPacketCapture()
 {
     s_running = false;
+
+    if (s_handle != INVALID_HANDLE_VALUE)
+        WinDivertShutdown(s_handle, WINDIVERT_SHUTDOWN_RECV);
 }
 
 #pragma endregion
@@ -55,11 +60,22 @@ static const char* ProtocolName(UINT8 proto)
     }
 }
 
-static unsigned int StartPacketCapture(HANDLE hReadyEvent)
+unsigned int StartPacketCapture(HANDLE hReadyEvent)
 {
     s_running = true;
-
-    HANDLE handle = WinDivertOpen("ip", WINDIVERT_LAYER_NETWORK, 0,
+    const char* filter =
+        "outbound and ((tcp and tcp.Ack) or udp or icmp) "
+        "and (ip.DstAddr < 10.0.0.0 or ip.DstAddr > 10.255.255.255) "
+        "and (ip.DstAddr < 172.16.0.0 or ip.DstAddr > 172.31.255.255) "
+        "and (ip.DstAddr < 192.168.0.0 or ip.DstAddr > 192.168.255.255) ";
+    
+    const char* errorStr = NULL;
+    UINT errorPos = 0;
+    if (!WinDivertHelperCompileFilter(filter, WINDIVERT_LAYER_NETWORK, NULL, 0, &errorStr, &errorPos));
+    {
+        wprintf(L"[FAIL][PacketCapture] Filter error at position %u: %hs\n", errorPos, errorStr);
+    }
+    HANDLE handle = WinDivertOpen(filter, WINDIVERT_LAYER_NETWORK, 0,
         WINDIVERT_FLAG_SNIFF | WINDIVERT_FLAG_RECV_ONLY);
 
     if (handle == INVALID_HANDLE_VALUE)
@@ -72,12 +88,12 @@ static unsigned int StartPacketCapture(HANDLE hReadyEvent)
             wprintf(L"       -> WinDivert.dll / WinDivert64.sys 파일을 찾을 수 없습니다.\n");
         else if (err == 577)
             wprintf(L"       -> 드라이버 서명 검증 실패. 테스트 서명 모드를 확인하세요.\n");
-        SetEvent(hReadyEvent);
+        //SetEvent(hReadyEvent);
         return 1;
     }
 
 	// Main 에게 Thread 가 준비되었음을 알림
-    SetEvent(hReadyEvent);
+    //SetEvent(hReadyEvent);
 
     wprintf(L"[OK][PacketCapture] 패킷 캡처 시작\n");
     wprintf(L"%-5s %-5s %-21s    %-21s %s\n",
@@ -151,17 +167,12 @@ static unsigned int StartPacketCapture(HANDLE hReadyEvent)
             }
         }
     }
-    catch (...)
+	catch (const std::exception& ex)
     {
-        wprintf(L"[ERROR][PacketCapture] 패킷 수신 중 예외 발생\n");
+        wprintf(L"[ERROR][PacketCapture] 패킷 수신 중 예외 발생: %hs\n", ex.what());
     }
     
     free(packet);
-
-    if (WinDivertShutdown(handle, WINDIVERT_SHUTDOWN_BOTH))
-        wprintf(L"[OK][PacketCapture] WinDivert Shutdown 성공\n");
-    else
-        wprintf(L"[FAIL][PacketCapture] WinDivertShutdown: error %lu\n", GetLastError());
 
     if (WinDivertClose(handle))
         wprintf(L"[OK][PacketCapture] WinDivert 핸들 닫기 성공\n");

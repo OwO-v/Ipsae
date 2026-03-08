@@ -138,3 +138,9 @@ struct ThreadSafeQueue
 		cv.notify_all();
 	}
 };
+
+// =============================================================================================
+// Common functions
+// =============================================================================================
+
+bool WaitForEngineWaiting(ENGINE_STATE* state, const wchar_t* caller);

@@ -2,7 +2,6 @@
 #include "DbInsert.h"
 #include "sqlite3.h"
 #include "Models.h"
-#include "Common.cpp"
 
 #pragma comment(lib, "sqlite3.lib")
 

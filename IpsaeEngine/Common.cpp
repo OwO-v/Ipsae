@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "Common.h"
 
 
@@ -11,7 +12,7 @@
 /// <param name="state">엔진 상태 포인터</param>
 /// <param name="caller">호출자 모듈명 (로그용)</param>
 /// <returns>대기 해제 시 true, 타임아웃 시 false (ENGINE_ERROR로 전환됨)</returns>
-inline bool WaitForEngineWaiting(ENGINE_STATE* state, const wchar_t* caller)
+bool WaitForEngineWaiting(ENGINE_STATE* state, const wchar_t* caller)
 {
 	if (state->status != ENGINE_WAITING)
 		return true;

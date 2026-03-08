@@ -127,8 +127,10 @@
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(ProjectDir)lib\x64\WinDivert.dll" "$(OutDir)"
-copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"</Command>
-      <Message>WinDivert DLL/SYS 복사 중...</Message>
+copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"
+copy /Y "$(ProjectDir)lib\x64\sqlite3.dll" "$(OutDir)"</Command>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,8 +154,10 @@ copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(ProjectDir)lib\x64\WinDivert.dll" "$(OutDir)"
-copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"</Command>
-      <Message>WinDivert DLL/SYS 복사 중...</Message>
+copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"
+copy /Y "$(ProjectDir)lib\x64\sqlite3.dll" "$(OutDir)"</Command>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
