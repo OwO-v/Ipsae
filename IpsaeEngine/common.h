@@ -73,12 +73,11 @@ struct ThreadSafeQueue
 	/// <param name="item">큐에 추가할 항목입니다.</param>
 	void Push(const T& item)
 	{
-		if (stopped)
-			return;
 		{
-			std::lock_guard<std::mutex> lock(mutex);
-			queue.push(item);
-		}
+		std::lock_guard<std::mutex> lock(mutex);
+		if (stopped) return;
+		queue.push(item);
+	}
 		cv.notify_one();
 	}
 
@@ -137,6 +136,16 @@ struct ThreadSafeQueue
 		}
 		cv.notify_all();
 	}
+
+	/// <summary>
+	///	Queue의 현재 크기를 반환합니다.
+	/// </summary>
+	/// <returns>큐의 현재 크기입니다.</returns>
+	int Size()
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		return static_cast<int>(queue.size());
+	}
 };
 
 // =============================================================================================
@@ -146,3 +155,7 @@ struct ThreadSafeQueue
 void InitializeLogger();
 
 bool WaitForEngineWaiting(ENGINE_STATE* state, const char* caller);
+
+void IpToStr(UINT32 ip, char* buf, size_t bufLen);
+
+UINT32 StrToIp(const char* str);

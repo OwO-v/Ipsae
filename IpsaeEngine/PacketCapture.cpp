@@ -12,13 +12,13 @@ static std::atomic<bool> s_running{ false };
 
 static HANDLE s_handle = INVALID_HANDLE_VALUE;
 
+static ThreadSafeQueue<std::unordered_set<UINT32>> s_sampleQueue;
+
 #pragma endregion
 
 #pragma region Forward declaration
 
-static void FormatIPv4(UINT32 addr, char* buf, size_t bufLen);
-static const char* ProtocolName(UINT8 proto);
-//static unsigned int StartPacketCapture(HANDLE hReadyEvent);
+static unsigned int StartPacketCapture(HANDLE hReadyEvent, ENGINE_STATE* state);
 
 #pragma endregion
 
@@ -28,40 +28,67 @@ unsigned int __stdcall StartPacketCaptureThread(void* param)
 {
     THREAD_CONTEXT* context = (THREAD_CONTEXT*)param;
 
-    return StartPacketCapture(context->hReadyEvent);
+    return StartPacketCapture(context->hReadyEvent, context->state);
 }
 
-void StopPacketCapture()
+void StopPacketCapture(const char* caller)
 {
     s_running = false;
-
     if (s_handle != INVALID_HANDLE_VALUE)
-        WinDivertShutdown(s_handle, WINDIVERT_SHUTDOWN_RECV);
+    {
+		WinDivertShutdown(s_handle, WINDIVERT_SHUTDOWN_RECV);
+		spdlog::info("[OK][PacketCapture] {}에서 PacketCapture 종료 요청", caller);
+    }
 }
-
 #pragma endregion
 
 #pragma region Static functions
 
-static void FormatIPv4(UINT32 addr, char* buf, size_t bufLen)
+static void StopRunning(ENGINE_STATE* state)
 {
-    UINT8* b = (UINT8*)&addr;
-    sprintf_s(buf, bufLen, "%u.%u.%u.%u", b[0], b[1], b[2], b[3]);
-}
-
-static const char* ProtocolName(UINT8 proto)
-{
-    switch (proto)
+    if (s_handle != INVALID_HANDLE_VALUE)
     {
-        case  1: return "ICMP";
-        case  6: return "TCP ";
-        case 17: return "UDP ";
-        default: return "??? ";
+        WinDivertClose(s_handle);
+		s_handle = INVALID_HANDLE_VALUE;
     }
+
+    s_running = false;
+    state->packetCaptureRunning = false;
 }
 
-unsigned int StartPacketCapture(HANDLE hReadyEvent)
+static int BatchPacketCapture(HANDLE handle, unsigned char* packet, UINT* recvLen, WINDIVERT_ADDRESS* addr, std::unordered_set<UINT32>& batch)
 {
+    try 
+    {
+        if (!WinDivertRecv(handle, packet, PACKET_BUFSIZE, recvLen, addr))
+            return 1;
+
+        PWINDIVERT_IPHDR ipHdr = NULL;
+        WinDivertHelperParsePacket(
+            packet, *recvLen,
+            &ipHdr, NULL, NULL, NULL, NULL,
+            NULL, NULL, NULL, NULL, NULL, NULL);
+
+        if (ipHdr == NULL) return 2;
+
+        UINT32 remoteHost = addr->Outbound ? ipHdr->DstAddr : ipHdr->SrcAddr;
+        batch.insert(remoteHost);
+    }
+    catch (const std::exception& ex)
+    {
+        spdlog::error("[PacketCapture] BatchPacketCapture 예외 발생: {}", ex.what());
+        return 3;
+	}
+
+    return 0;
+}
+
+
+static unsigned int StartPacketCapture(HANDLE hReadyEvent, ENGINE_STATE* state)
+{
+    std::unordered_set<UINT32> batchSet;
+    DWORD64 lastFlushTime = 0;
+
     s_running = true;
     const char* filter =
         "outbound and ((tcp and tcp.Ack) or udp or icmp) "
@@ -69,115 +96,80 @@ unsigned int StartPacketCapture(HANDLE hReadyEvent)
         "and (ip.DstAddr < 172.16.0.0 or ip.DstAddr > 172.31.255.255) "
         "and (ip.DstAddr < 192.168.0.0 or ip.DstAddr > 192.168.255.255) ";
 
-    const char* errorStr = NULL;
-    UINT errorPos = 0;
-    if (!WinDivertHelperCompileFilter(filter, WINDIVERT_LAYER_NETWORK, NULL, 0, &errorStr, &errorPos));
-    {
-        spdlog::error("[PacketCapture] Filter error at position {}: {}", errorPos, errorStr ? errorStr : "unknown");
-    }
-    HANDLE handle = WinDivertOpen(filter, WINDIVERT_LAYER_NETWORK, 0,
+    s_handle = WinDivertOpen(filter, WINDIVERT_LAYER_NETWORK, 0,
         WINDIVERT_FLAG_SNIFF | WINDIVERT_FLAG_RECV_ONLY);
 
-    if (handle == INVALID_HANDLE_VALUE)
+    if (s_handle == INVALID_HANDLE_VALUE)
     {
         DWORD err = GetLastError();
         spdlog::error("[PacketCapture] WinDivertOpen: error {}", err);
         if (err == ERROR_ACCESS_DENIED)
-            spdlog::error("[PacketCapture]   -> 관리자 권한으로 실행하세요.");
+            spdlog::error("[PacketCapture] 관리자 권한으로 실행하세요.");
         else if (err == 2)
-            spdlog::error("[PacketCapture]   -> WinDivert.dll / WinDivert64.sys 파일을 찾을 수 없습니다.");
+            spdlog::error("[PacketCapture] WinDivert.dll / WinDivert64.sys 파일을 찾을 수 없습니다.");
         else if (err == 577)
-            spdlog::error("[PacketCapture]   -> 드라이버 서명 검증 실패. 테스트 서명 모드를 확인하세요.");
-        //SetEvent(hReadyEvent);
+            spdlog::error("[PacketCapture] 드라이버 서명 검증 실패. 테스트 서명 모드를 확인하세요.");
+        state->packetCaptureRunning = false;
+        SetEvent(hReadyEvent);
         return 1;
     }
 
-	// Main 에게 Thread 가 준비되었음을 알림
-    //SetEvent(hReadyEvent);
+    auto packet = std::make_unique<unsigned char[]>(PACKET_BUFSIZE);
+
+    // Main 에게 Thread 가 준비되었음을 알림
+	state->packetCaptureRunning = true;
+    SetEvent(hReadyEvent);
 
     spdlog::info("[PacketCapture] 패킷 캡처 시작");
-    spdlog::info("{:<5} {:<8} {:<21}    {:<21} {}", "방향", "프로토콜", "출발지", "목적지", "크기");
-    spdlog::info("───────────────────────────────────────────────────────────────────");
-
-    unsigned char* packet = (unsigned char*)malloc(PACKET_BUFSIZE);
-    if (!packet)
-    {
-        spdlog::error("[PacketCapture] 패킷 버퍼 할당 실패");
-        WinDivertClose(handle);
-		return 1;
-    }
 
     WINDIVERT_ADDRESS addr;
     UINT recvLen = 0;
+	lastFlushTime = GetTickCount64();
 
-    try
+    while (s_running)
     {
-        while (s_running)
+        // 엔진 대기 상태 처리
+        if (!WaitForEngineWaiting(state, "PacketCapture"))
         {
-            if (!WinDivertRecv(handle, packet, PACKET_BUFSIZE, &recvLen, &addr))
-            {
-                if (!s_running) break;
-                continue;
-            }
-
-            PWINDIVERT_IPHDR  ipHdr = NULL;
-            PWINDIVERT_TCPHDR tcpHdr = NULL;
-            PWINDIVERT_UDPHDR udpHdr = NULL;
-            UINT8 protocol = 0;
-
-            WinDivertHelperParsePacket(
-                packet, recvLen,
-                &ipHdr, NULL, &protocol, NULL, NULL,
-                &tcpHdr, &udpHdr, NULL, NULL, NULL, NULL);
-
-            if (ipHdr == NULL) continue;
-
-            const char* dir = addr.Outbound ? "OUT" : "IN ";
-
-            char srcStr[32], dstStr[32];
-            FormatIPv4(ipHdr->SrcAddr, srcStr, sizeof(srcStr));
-            FormatIPv4(ipHdr->DstAddr, dstStr, sizeof(dstStr));
-
-            UINT16 srcPort = 0, dstPort = 0;
-            if (tcpHdr != NULL)
-            {
-                srcPort = WinDivertHelperNtohs(tcpHdr->SrcPort);
-                dstPort = WinDivertHelperNtohs(tcpHdr->DstPort);
-            }
-            else if (udpHdr != NULL)
-            {
-                srcPort = WinDivertHelperNtohs(udpHdr->SrcPort);
-                dstPort = WinDivertHelperNtohs(udpHdr->DstPort);
-            }
-
-            UINT16 totalLen = WinDivertHelperNtohs(ipHdr->Length);
-
-            if (srcPort != 0)
-            {
-                spdlog::info("[{}] {} {}:{} -> {}:{}  len={}",
-                    dir, ProtocolName(protocol),
-                    srcStr, srcPort, dstStr, dstPort, totalLen);
-            }
-            else
-            {
-                spdlog::info("[{}] {} {} -> {}  len={}",
-                    dir, ProtocolName(protocol),
-                    srcStr, dstStr, totalLen);
-            }
+            spdlog::warn("[PacketCapture] 엔진이 Waiting 상태에서 중지되었습니다. 패킷 캡처를 중단합니다.");
+            break;
         }
+
+		// 패킷 수신 및 엔진 오류 상태 처리
+		int batchResult = BatchPacketCapture(s_handle, packet.get(), &recvLen, &addr, batchSet);
+        if (batchResult == 1) {
+            if (!s_running) break;
+            spdlog::error("[PacketCapture] WinDivertRecv: error {}", GetLastError());
+			break;
+        } else if (batchResult == 2) {
+            continue;
+        } else if (batchResult == 3) {
+            spdlog::error("[PacketCapture] BatchPacketCapture 예외 발생, 엔진을 종료합니다.");
+            break;
+		} else if (batchResult != 0) {
+            spdlog::error("[PacketCapture] 알 수 없는 오류 발생");
+            break;
+		}
+
+		// 일정 시간마다 배치 큐에 추가
+		DWORD64 now = GetTickCount64();
+        if (now - lastFlushTime > 1000 && !batchSet.empty())
+        {
+            s_sampleQueue.Push(std::move(batchSet));
+            batchSet.clear();
+            lastFlushTime = now;
+		}
     }
-    catch (const std::exception& ex)
+
+	// 종료 시 남은 배치가 있으면 큐에 추가
+    if (!batchSet.empty())  
     {
-        spdlog::error("[PacketCapture] 패킷 수신 중 예외 발생: {}", ex.what());
-    }
+        s_sampleQueue.Push(std::move(batchSet));
+        batchSet.clear();
+	}
 
-    free(packet);
-
-    if (WinDivertClose(handle))
-        spdlog::info("[PacketCapture] WinDivert 핸들 닫기 성공");
-    else
-        spdlog::error("[PacketCapture] WinDivertClose: error {}", GetLastError());
-
+	// 패킷 캡처 종료
+	StopRunning(state);
     return 0;
 }
 
