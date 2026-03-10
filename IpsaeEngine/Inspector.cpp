@@ -1,6 +1,12 @@
 #include "DbInsert.h"
 #include "pch.h"
 #include "PacketCapture.h"
+#include <WinSock2.h> // Windows Sockets API
+#include <ws2tcpip.h>
+#include <iphlpapi.h> // IP Helper API
+#include <winternl.h> // NtQueryInformationProcess 함수 사용을 위한 헤더
+
+#pragma comment(lib, "Iphlpapi.lib") // IP Helper API 라이브러리 링크
 
 #pragma region Variables
 
@@ -47,7 +53,7 @@ unsigned int __stdcall StartInspectorThread(void* param)
 #pragma region Static functions
 
 /*
-*	GetExtendedTcpTable() - MIB_TCPTABLE_OWNER_PID, bufsize
+*	GetExtendedTcpTable() - MIB_TCPTABLE_OWNER_PID, bufsize; dwOwningPid
 *	OpenProcess()
 *	QueryFullProcessImageName() - ProcessImageFileName for NtQueryInformationProcess()
 *	NtQueryInformationProcess() - InheritedFromUniqueProcessId
@@ -56,7 +62,15 @@ unsigned int __stdcall StartInspectorThread(void* param)
 static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 {
 	// 추후 사용할 변수 선언
-	
+	char ipStr[16]; // IPv4 주소 문자열 저장용 버퍼
+
+	MIB_TCPTABLE_OWNER_PID* tcpTable = NULL; // TCP 연결 정보 저장용 구조체 포인터
+	ULONG tableSize = 0; // GetExtendedTcpTable 함수에서 필요한 버퍼 크기 저장용 변수
+
+	UINT32 targetPID = 0; // PID 저장용
+
+	HANDLE hProcess = NULL; // 프로세스 핸들 저장용
+
 	 
 	// Main 에게 Thread 가 준비되었음을 알림
 	state->inspectorRunning = true;
@@ -68,7 +82,8 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 		// While 문 진입 - set에서 데이터 1개씩 가져오기
 		for (UINT32 ip : hosts) {
 
-			char ipStr[16];
+			// IP 주소 문자열 초기화
+			memset(ipStr, 0, sizeof(ipStr));
 
 			// IP 주소를 문자열로 변환
 			FormatIPv4(ip, ipStr, sizeof(ipStr));
@@ -76,8 +91,37 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 			// 가져온 데이터와 DB에서 가져온 위협 호스트 목록과 비교
 			// if문 실행 - 위협 호스트인 경우
 			if (threatHosts.find(ip) != threatHosts.end()) {
-				// 현재 프로세스 정보 탐색
 
+				// 현재 프로세스 정보 탐색
+				// TCP 연결 정보 가져오기 - table size를 먼저 가져오기
+				GetExtendedTcpTable(NULL, &tableSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+
+				// tcpTable 메모리 할당
+				tcpTable = (MIB_TCPTABLE_OWNER_PID*)malloc(tableSize);
+				
+				// TCP 연결 정보 가져오기 - tcpTable에 저장
+				GetExtendedTcpTable(tcpTable, &tableSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+
+				// PID 찾기
+				getPID(tcpTable, ip, &targetPID);
+
+				// 예외 : PID가 0인 경우 (일치하는 IP가 없는 경우)
+				if (targetPID == 0) {
+					spdlog::warn("[Inspector] 일치하는 IP가 없습니다: {}", ipStr);
+					continue;
+				}
+
+				// PID로 프로세스 접근 통로 open 후 프로세스 핸들 저장
+				hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, targetPID);
+
+				// 예외: 프로세스 핸들이 NULL인 경우 (프로세스 접근 실패)
+				if (hProcess == NULL) {
+					spdlog::error("[Inspector] OpenProcess 실패: PID {}, IP {}", targetPID, ipStr);
+					continue;
+				}
+
+				// 프로세스 이름, 경로, 생성 시간 등 정보 가져오기 
+				NtQueryInformationProcess(hProcess, ProcessImageFileName, NULL, 0, &tableSize); // 필요한 버퍼 크기 가져오기
 
 				// 부모 프로세스 트리 탐색 - 함수로 분리해서 작성 및 호출
 
@@ -97,8 +141,6 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 
 	}
 
-	
-
 	return 0;
 }
 
@@ -107,6 +149,18 @@ void getPPID(DWORD pid, std::vector<DWORD>& ppidList) {
 	// 현재 프로세스의 PPID 가져오기
 	// ppidList에 추가
 	// PPID가 0이 아니면 재귀적으로 호출하여 부모 프로세스 트리 탐색
+}
+
+// Table에서 Loop로 해당 ip와 일치하는 PID 가져오는 함수
+void getPID(const MIB_TCPTABLE_OWNER_PID* curTable, const UINT32 ip, UINT32* curPID) {
+	for(UINT32 i = 0; i < curTable->dwNumEntries; i++) {
+		if (curTable->table[i].dwRemoteAddr == ip) {
+			*curPID = curTable->table[i].dwOwningPid;
+			return;
+		}
+	}
+
+	*curPID = 0; // 일치하는 IP가 없는 경우 PID를 0으로 설정
 }
 
 
