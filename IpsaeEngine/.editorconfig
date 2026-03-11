@@ -70,7 +70,7 @@ charset = utf-8
 # cpp_space_pointer_reference_alignment = left
 # cpp_space_around_ternary_operator = insert
 # cpp_use_unreal_engine_macro_formatting = true
-# cpp_wrap_preserve_blocks = one_liners
+cpp_wrap_preserve_blocks = one_liners
 # 
 # # Visual C++ Include 정리 설정
 # 
