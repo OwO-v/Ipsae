@@ -1,12 +1,26 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using IpsaeShared;
 
 namespace IpsaeService;
 
+public enum EngineAction
+{
+    None,
+    Start,
+    Stop,
+}
+
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private ServiceStatusCode _status = ServiceStatusCode.Active;
+    private readonly object _lock = new();
+
+    private volatile ServiceStatusCode _status = ServiceStatusCode.Inactive;
+    private volatile EngineAction _requestedAction = EngineAction.Start;
+
+    private const string EnginePath = @"C:\Program Files\Ipsae\IpsaeEngine.exe";
+    private const int EngineCheckIntervalMs = 2000;
 
     public Worker(ILogger<Worker> logger)
     {
@@ -15,10 +29,160 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("IpsaeIDS Pipe Server starting");
+        _logger.LogInformation("IpsaeIDS Service starting");
         await Task.Yield();
 
-        while (!stoppingToken.IsCancellationRequested)
+        var engineTask = EngineManagerLoop(stoppingToken);
+        var pipeTask = PipeServerLoop(stoppingToken);
+
+        await Task.WhenAll(engineTask, pipeTask);
+
+        _logger.LogInformation("IpsaeIDS Service stopped");
+    }
+
+    private async Task EngineManagerLoop(CancellationToken ct)
+    {
+        Process? engineProcess = null;
+
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var action = _requestedAction;
+
+                switch (action)
+                {
+                    case EngineAction.Start when _status is ServiceStatusCode.Inactive or ServiceStatusCode.Stopping:
+                        engineProcess = StartEngine();
+                        break;
+
+                    case EngineAction.Stop when _status is ServiceStatusCode.Active or ServiceStatusCode.Starting:
+                        StopEngine(engineProcess);
+                        engineProcess = null;
+                        break;
+                }
+
+                if (_status == ServiceStatusCode.Active && engineProcess != null && engineProcess.HasExited)
+                {
+                    _logger.LogWarning("Engine process exited unexpectedly (exit code: {ExitCode})", engineProcess.ExitCode);
+                    engineProcess.Dispose();
+                    engineProcess = null;
+                    lock (_lock)
+                    {
+                        _status = ServiceStatusCode.Inactive;
+                    }
+                }
+
+                await Task.Delay(EngineCheckIntervalMs, ct);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            StopEngine(engineProcess);
+        }
+    }
+
+    private Process? StartEngine()
+    {
+        try
+        {
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Starting;
+                _requestedAction = EngineAction.None;
+            }
+
+            _logger.LogInformation("Starting engine: {Path}", EnginePath);
+
+            var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = EnginePath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
+
+            if (process == null || process.HasExited)
+            {
+                _logger.LogError("Failed to start engine process");
+                lock (_lock)
+                {
+                    _status = ServiceStatusCode.Inactive;
+                }
+                return null;
+            }
+
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Active;
+            }
+
+            _logger.LogInformation("Engine started (PID: {Pid})", process.Id);
+            return process;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start engine");
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Inactive;
+            }
+            return null;
+        }
+    }
+
+    private void StopEngine(Process? process)
+    {
+        if (process == null || process.HasExited)
+        {
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Inactive;
+                _requestedAction = EngineAction.None;
+            }
+            return;
+        }
+
+        try
+        {
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Stopping;
+                _requestedAction = EngineAction.None;
+            }
+
+            _logger.LogInformation("Stopping engine (PID: {Pid})", process.Id);
+
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(5000);
+            }
+
+            process.Dispose();
+
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Inactive;
+            }
+
+            _logger.LogInformation("Engine stopped");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error stopping engine");
+            lock (_lock)
+            {
+                _status = ServiceStatusCode.Inactive;
+            }
+        }
+    }
+
+    private async Task PipeServerLoop(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
         {
             try
             {
@@ -29,12 +193,12 @@ public class Worker : BackgroundService
                     PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous);
 
-                await server.WaitForConnectionAsync(stoppingToken);
+                await server.WaitForConnectionAsync(ct);
                 _logger.LogInformation("Client connected");
 
-                await HandleClientAsync(server, stoppingToken);
+                await HandleClientAsync(server, ct);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 break;
             }
@@ -78,16 +242,18 @@ public class Worker : BackgroundService
 
             case PipeCommand.StartService:
                 _logger.LogInformation("Start command received");
-                _status = ServiceStatusCode.Starting;
-                // TODO: actual start logic, then set Active
-                _status = ServiceStatusCode.Active;
+                lock (_lock)
+                {
+                    _requestedAction = EngineAction.Start;
+                }
                 return PipeMessage.Status(_status);
 
             case PipeCommand.StopService:
                 _logger.LogInformation("Stop command received");
-                _status = ServiceStatusCode.Stopping;
-                // TODO: actual stop logic, then set Inactive
-                _status = ServiceStatusCode.Inactive;
+                lock (_lock)
+                {
+                    _requestedAction = EngineAction.Stop;
+                }
                 return PipeMessage.Status(_status);
 
             default:
