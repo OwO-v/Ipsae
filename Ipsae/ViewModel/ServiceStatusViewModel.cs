@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Windows.Input;
-using Ipsae.Service;
+using Ipsae.Ipc;
+using Ipsae.Navigation;
+using IpsaeShared;
 
 namespace Ipsae.ViewModel;
 
@@ -110,8 +112,8 @@ public class ServiceStatusViewModel : ViewModelBase
         var state = ServiceState.Instance;
         state.Status = state.Status switch
         {
-            ServiceStatus.Active => ServiceStatus.Stopping,
-            ServiceStatus.Inactive => ServiceStatus.Starting,
+            ServiceStatusCode.Active => ServiceStatusCode.Stopping,
+            ServiceStatusCode.Inactive => ServiceStatusCode.Starting,
             _ => state.Status
         };
     }
@@ -121,18 +123,18 @@ public class ServiceStatusViewModel : ViewModelBase
         if (e.PropertyName == nameof(ServiceState.Status))
         {
             var status = ServiceState.Instance.Status;
-            IsServiceRunning = status == ServiceStatus.Active;
+            IsServiceRunning = status == ServiceStatusCode.Active;
             CanToggleService = !ServiceState.Instance.IsTransitioning;
             ServiceStatusText = GetStatusMessage(status);
         }
     }
 
-    private static string GetStatusMessage(ServiceStatus status) => status switch
+    private static string GetStatusMessage(ServiceStatusCode status) => status switch
     {
-        ServiceStatus.Active => "잎새가 동작하고 있습니다.",
-        ServiceStatus.Inactive => "잎새가 중지되었습니다.",
-        ServiceStatus.Starting => "잎새를 시작하는 중입니다...",
-        ServiceStatus.Stopping => "잎새를 중지하는 중입니다...",
+        ServiceStatusCode.Active => "잎새가 동작하고 있습니다.",
+        ServiceStatusCode.Inactive => "잎새가 중지되었습니다.",
+        ServiceStatusCode.Starting => "잎새를 시작하는 중입니다...",
+        ServiceStatusCode.Stopping => "잎새를 중지하는 중입니다...",
         _ => "알 수 없는 상태입니다."
     };
 }

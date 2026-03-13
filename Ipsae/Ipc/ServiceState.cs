@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Media;
 using IpsaeShared;
 
-namespace Ipsae.Service;
+namespace Ipsae.Ipc;
 
 public class ServiceState : INotifyPropertyChanged
 {

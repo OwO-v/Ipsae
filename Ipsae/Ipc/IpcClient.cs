@@ -2,14 +2,14 @@ using System.IO;
 using System.IO.Pipes;
 using IpsaeShared;
 
-namespace Ipsae.Service;
+namespace Ipsae.Ipc;
 
-public class PipeClient
+public class IpcClient
 {
-    private static readonly Lazy<PipeClient> _instance = new(() => new PipeClient());
-    public static PipeClient Instance => _instance.Value;
+    private static readonly Lazy<IpcClient> _instance = new(() => new IpcClient());
+    public static IpcClient Instance => _instance.Value;
 
-    private PipeClient() { }
+    private IpcClient() { }
 
     public async Task<ServiceStatusCode?> SendCommandAsync(PipeCommand command, int timeoutMs = 3000)
     {

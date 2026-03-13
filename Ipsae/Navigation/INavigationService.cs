@@ -1,4 +1,4 @@
-namespace Ipsae.Service;
+namespace Ipsae.Navigation;
 
 public interface INavigationService
 {

@@ -22,7 +22,7 @@ struct ENGINE_STATE
 	std::atomic<bool> packetCaptureRunning{ false };
 	std::atomic<bool> inspectorRunning{ false };
 	std::atomic<bool> dbInsertRunning{ false };
-	std::atomic<bool> ipcToolRunning{ false };
+	std::atomic<bool> ipcClientRunning{ false };
 };
 
 // =============================================================================================

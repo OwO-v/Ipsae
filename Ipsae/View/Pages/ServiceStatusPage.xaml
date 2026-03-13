@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Ipsae.View.Pages"
-             xmlns:svc="clr-namespace:Ipsae.Service"
+             xmlns:svc="clr-namespace:Ipsae.Ipc"
+             xmlns:shared="clr-namespace:IpsaeShared;assembly=IpsaeShared"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
              FontFamily="Segoe UI">
@@ -93,20 +94,20 @@
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource ServiceToggleButton}">
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static svc:ServiceStatus.Inactive}">
+                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static shared:ServiceStatusCode.Inactive}">
                                                             <Setter Property="Content" Value="START SERVICE"/>
                                                             <Setter Property="Foreground" Value="{StaticResource StatusGreen}"/>
                                                             <Setter Property="BorderBrush" Value="#203320"/>
                                                             <Setter Property="Tag" Value="#101A10"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static svc:ServiceStatus.Starting}">
+                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static shared:ServiceStatusCode.Starting}">
                                                             <Setter Property="Content" Value="STARTING..."/>
                                                             <Setter Property="Foreground" Value="{StaticResource StatusOrange}"/>
                                                             <Setter Property="BorderBrush" Value="#332B20"/>
                                                             <Setter Property="Tag" Value="#1A1510"/>
                                                             <Setter Property="IsEnabled" Value="False"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static svc:ServiceStatus.Stopping}">
+                                                        <DataTrigger Binding="{Binding State.Status}" Value="{x:Static shared:ServiceStatusCode.Stopping}">
                                                             <Setter Property="Content" Value="STOPPING..."/>
                                                             <Setter Property="Foreground" Value="{StaticResource StatusOrange}"/>
                                                             <Setter Property="BorderBrush" Value="#332B20"/>

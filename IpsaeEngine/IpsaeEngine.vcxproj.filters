@@ -33,7 +33,7 @@
     <ClCompile Include="Inspector.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="IpcTool.cpp">
+    <ClCompile Include="IpcClient.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,7 +53,7 @@
     <ClInclude Include="Models.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="IpcTool.h">
+    <ClInclude Include="IpcClient.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Inspector.h">

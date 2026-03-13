@@ -1,7 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
-using Ipsae.Service;
+using Ipsae.Ipc;
+using Ipsae.Navigation;
 
 namespace Ipsae.ViewModel;
 

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Common.h"
-#include "IpcTool.h"
+#include "IpcClient.h"
 #include "DbInsert.h"
 #include "Inspector.h"
 #include "PacketCapture.h"
@@ -52,7 +52,7 @@ int wmain()
     HANDLE hThreads[THREAD_COUNT] = {};
     THREAD_CONTEXT threadContexts[THREAD_COUNT] = {};
     THREAD_FUNC threadFunctions[THREAD_COUNT] = { 
-        StartIpcToolThread,
+        StartIpcClientThread,
         StartDbInsertThread, 
         StartInspectorThread, 
         StartPacketCaptureThread

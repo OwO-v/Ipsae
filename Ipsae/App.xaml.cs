@@ -1,5 +1,5 @@
 using System.Windows;
-using Ipsae.Service;
+using Ipsae.Navigation;
 
 namespace Ipsae;
 

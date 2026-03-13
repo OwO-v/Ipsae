@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "IpcTool.h"
+#include "IpcClient.h"
 
 #pragma region Constants
 
@@ -42,7 +42,7 @@ static const DWORD REPORT_INTERVAL = 5000;
 
 #pragma region Forward declaration
 
-static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state);
+static unsigned int StartIpcClient(HANDLE hReadyEvent, ENGINE_STATE* state);
 static HANDLE ConnectToPipe();
 static int SendCommand(HANDLE hPipe, BYTE command);
 static int ReadResponse(HANDLE hPipe, BYTE* outCommand, std::vector<BYTE>& outPayload);
@@ -52,23 +52,23 @@ static int QueryServiceStatus(HANDLE hPipe, BYTE* outStatus);
 
 #pragma region Functions
 
-unsigned int __stdcall StartIpcToolThread(void* param)
+unsigned int __stdcall StartIpcClientThread(void* param)
 {
     THREAD_CONTEXT* context = (THREAD_CONTEXT*)param;
 
-    return StartIpcTool(context->hReadyEvent, context->state);
+    return StartIpcClient(context->hReadyEvent, context->state);
 }
 
 #pragma endregion
 
 #pragma region Static functions
 
-static void StopIpcTool(HANDLE hPipe, ENGINE_STATE* state)
+static void StopIpcClient(HANDLE hPipe, ENGINE_STATE* state)
 {
     if (hPipe != INVALID_HANDLE_VALUE)
         CloseHandle(hPipe);
 
-    state->ipcToolRunning = false;
+    state->ipcClientRunning = false;
 }
 
 static HANDLE ConnectToPipe()
@@ -91,14 +91,14 @@ static HANDLE ConnectToPipe()
     DWORD err = GetLastError();
     if (err != ERROR_PIPE_BUSY)
     {
-        spdlog::warn("[IpcTool] ConnectToPipe: 파이프를 찾을 수 없습니다. (error {})", err);
+        spdlog::warn("[IpcClient] ConnectToPipe: 파이프를 찾을 수 없습니다. (error {})", err);
         return INVALID_HANDLE_VALUE;
     }
 
 	// 첫 번째 시도: 파이프가 현재 사용 중이므로 대기
     if (!WaitNamedPipeW(PIPE_NAME, PIPE_CONNECT_TIMEOUT))
     {
-        spdlog::warn("[IpcTool] ConnectToPipe: 파이프 대기 시간 초과");
+        spdlog::warn("[IpcClient] ConnectToPipe: 파이프 대기 시간 초과");
         return INVALID_HANDLE_VALUE;
     }
 
@@ -115,7 +115,7 @@ static HANDLE ConnectToPipe()
 	// 2차 시도 결과 반환 (성공 또는 실패)
     if (hPipe == INVALID_HANDLE_VALUE)
     {
-        spdlog::warn("[IpcTool] ConnectToPipe: 2차 연결 실패 (error {})", GetLastError());
+        spdlog::warn("[IpcClient] ConnectToPipe: 2차 연결 실패 (error {})", GetLastError());
     }
 
     return hPipe;
@@ -137,7 +137,7 @@ static int SendCommand(HANDLE hPipe, BYTE command)
     DWORD written = 0;
     if (!WriteFile(hPipe, buffer, HEADER_SIZE, &written, NULL))
     {
-        spdlog::error("[IpcTool] SendCommand: 파이프 쓰기 실패 (error {})", GetLastError());
+        spdlog::error("[IpcClient] SendCommand: 파이프 쓰기 실패 (error {})", GetLastError());
         return 1;
     }
 
@@ -161,14 +161,14 @@ static int ReadResponse(HANDLE hPipe, BYTE* outCommand, std::vector<BYTE>& outPa
         DWORD bytesRead = 0;
         if (!ReadFile(hPipe, header + totalRead, HEADER_SIZE - totalRead, &bytesRead, NULL))
         {
-            spdlog::error("[IpcTool] ReadResponse: 헤더 읽기 실패 (error {})", GetLastError());
+            spdlog::error("[IpcClient] ReadResponse: 헤더 읽기 실패 (error {})", GetLastError());
             return 1;
         }
 
         // bytesRead == 0 이면 서버가 연결을 끊은 것 (EOF)
         if (bytesRead == 0)
         {
-            spdlog::warn("[IpcTool] ReadResponse: 서버 연결 끊김 (EOF)");
+            spdlog::warn("[IpcClient] ReadResponse: 서버 연결 끊김 (EOF)");
             return 1;
         }
 
@@ -191,7 +191,7 @@ static int ReadResponse(HANDLE hPipe, BYTE* outCommand, std::vector<BYTE>& outPa
     // PipeMessage.cs의 검증 로직과 동일: 음수이거나 64KB 초과 시 거부
     if (payloadLength < 0 || payloadLength > MAX_PAYLOAD_SIZE)
     {
-        spdlog::error("[IpcTool] ReadResponse: 잘못된 페이로드 크기 ({})", payloadLength);
+        spdlog::error("[IpcClient] ReadResponse: 잘못된 페이로드 크기 ({})", payloadLength);
         return 1;
     }
 
@@ -211,13 +211,13 @@ static int ReadResponse(HANDLE hPipe, BYTE* outCommand, std::vector<BYTE>& outPa
         DWORD bytesRead = 0;
         if (!ReadFile(hPipe, outPayload.data() + totalRead, payloadLength - totalRead, &bytesRead, NULL))
         {
-            spdlog::error("[IpcTool] ReadResponse: 페이로드 읽기 실패 (error {})", GetLastError());
+            spdlog::error("[IpcClient] ReadResponse: 페이로드 읽기 실패 (error {})", GetLastError());
             return 1;
         }
 
         if (bytesRead == 0)
         {
-            spdlog::warn("[IpcTool] ReadResponse: 페이로드 읽기 중 서버 연결 끊김");
+            spdlog::warn("[IpcClient] ReadResponse: 페이로드 읽기 중 서버 연결 끊김");
             return 1;
         }
 
@@ -245,7 +245,7 @@ static int QueryServiceStatus(HANDLE hPipe, BYTE* outStatus)
     // 1) 명령 코드가 StatusResponse(0x81)인지 확인
     if (responseCommand != CMD_STATUS_RESPONSE)
     {
-        spdlog::error("[IpcTool] QueryServiceStatus: 예상과 다른 응답 명령 (0x{:02X})", responseCommand);
+        spdlog::error("[IpcClient] QueryServiceStatus: 예상과 다른 응답 명령 (0x{:02X})", responseCommand);
         return 1;
     }
 
@@ -253,7 +253,7 @@ static int QueryServiceStatus(HANDLE hPipe, BYTE* outStatus)
     //    PipeMessage.Status()는 항상 1바이트 페이로드를 포함함
     if (payload.empty())
     {
-        spdlog::error("[IpcTool] QueryServiceStatus: 빈 페이로드");
+        spdlog::error("[IpcClient] QueryServiceStatus: 빈 페이로드");
         return 1;
     }
 
@@ -282,7 +282,7 @@ static const char* StatusCodeToString(BYTE status)
 
 
 // ──────────────────────────────────────────────────────────────────────
-// StartIpcTool
+// StartIpcClient
 // IPC 모듈의 메인 루프. 주기적으로 IpsaeService와 통신하여
 // 서비스 상태를 모니터링한다.
 //
@@ -301,7 +301,7 @@ static const char* StatusCodeToString(BYTE status)
 // state: 엔진 전체 상태를 공유하는 구조체 포인터
 // 반환값: 0 = 정상 종료, 1 = 초기화 실패
 // ──────────────────────────────────────────────────────────────────────
-static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
+static unsigned int StartIpcClient(HANDLE hReadyEvent, ENGINE_STATE* state)
 {
     // IpsaeService의 Named Pipe 서버에 연결 시도
     HANDLE hPipe = ConnectToPipe();
@@ -310,18 +310,18 @@ static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
     // (서비스가 아직 시작되지 않았을 수 있으므로 여기서 종료하지 않음)
     if (hPipe == INVALID_HANDLE_VALUE)
     {
-        spdlog::warn("[IpcTool] 초기 파이프 연결 실패. 메인 루프에서 재연결을 시도합니다.");
+        spdlog::warn("[IpcClient] 초기 파이프 연결 실패. 메인 루프에서 재연결을 시도합니다.");
     }
     else
     {
-        spdlog::info("[IpcTool] 파이프 연결 성공");
+        spdlog::info("[IpcClient] 파이프 연결 성공");
     }
 
     // Main 스레드에게 이 스레드가 준비되었음을 알림
-    state->ipcToolRunning = true;
+    state->ipcClientRunning = true;
     SetEvent(hReadyEvent);
 
-    spdlog::info("[IpcTool] IPC 모듈 시작");
+    spdlog::info("[IpcClient] IPC 모듈 시작");
 
     // ── 메인 루프 ──
     // 엔진이 STOPPING/STOPPED/ERROR 상태가 될 때까지 반복
@@ -332,7 +332,7 @@ static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
         // ── 엔진 대기 상태 처리 ──
         // ENGINE_WAITING 상태이면 상태가 바뀔 때까지 블로킹 대기
         // 타임아웃(60초) 초과 시 false 반환 → 루프 탈출
-        if (!WaitForEngineWaiting(state, "IpcTool"))
+        if (!WaitForEngineWaiting(state, "IpcClient"))
             break;
 
         // ── 파이프 미연결 상태 → 재연결 시도 ──
@@ -346,7 +346,7 @@ static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
                 Sleep(REPORT_INTERVAL);
                 continue;
             }
-            spdlog::info("[IpcTool] 파이프 재연결 성공");
+            spdlog::info("[IpcClient] 파이프 재연결 성공");
         }
 
         // ── 서비스 상태 질의 ──
@@ -355,7 +355,7 @@ static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
         {
             // 통신 실패 → 파이프 연결이 끊긴 것으로 간주
             // 핸들을 닫고 다음 루프에서 재연결 시도
-            spdlog::warn("[IpcTool] 서비스 상태 질의 실패. 파이프를 닫고 재연결합니다.");
+            spdlog::warn("[IpcClient] 서비스 상태 질의 실패. 파이프를 닫고 재연결합니다.");
             CloseHandle(hPipe);
             hPipe = INVALID_HANDLE_VALUE;
 
@@ -364,7 +364,7 @@ static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
         }
 
         // 서비스 상태 로그 출력
-        spdlog::debug("[IpcTool] 서비스 상태: {}", StatusCodeToString(serviceStatus));
+        spdlog::debug("[IpcClient] 서비스 상태: {}", StatusCodeToString(serviceStatus));
 
         // ── 다음 질의까지 대기 ──
         // REPORT_INTERVAL(5초)마다 서비스 상태를 확인
@@ -374,8 +374,8 @@ static unsigned int StartIpcTool(HANDLE hReadyEvent, ENGINE_STATE* state)
     }
 
     // ── 종료 처리 ──
-    spdlog::info("[IpcTool] IPC 모듈 종료");
-    StopIpcTool(hPipe, state);
+    spdlog::info("[IpcClient] IPC 모듈 종료");
+    StopIpcClient(hPipe, state);
     return 0;
 }
 
