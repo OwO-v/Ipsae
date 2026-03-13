@@ -13,7 +13,7 @@
 #pragma region Variables
 
 static ThreadSafeQueue<std::unordered_set<UINT32>> inspectQueue;
-static std::unordered_set<UINT32>& threatHosts;
+static std::unordered_set<UINT32> threatHosts;
 
 std::unordered_set<UINT32> hosts;
 
@@ -21,6 +21,7 @@ std::unordered_set<UINT32> hosts;
 
 #pragma region Forward declaration
 
+unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state);
 void getPID(const MIB_TCPTABLE_OWNER_PID* curTable, const UINT32 ip, UINT32* curPID);
 void getProcessTree(DB_INSERT_DATA* dbData, const UINT32 targetPID);
 
