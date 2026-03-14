@@ -4,6 +4,7 @@
 #include "DbInsert.h"
 #include "Inspector.h"
 #include "PacketCapture.h"
+#include "config.cpp"
 
 #define THREAD_COUNT 4
 
@@ -40,6 +41,8 @@ int wmain()
 
     ENGINE_STATE state;
     state.status = ENGINE_INIT;
+
+	state.interfaceName = iniInterfaceParser();
 
     /* ============================== */
     // 2. Flag 초기화 작성

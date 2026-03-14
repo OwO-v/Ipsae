@@ -23,6 +23,9 @@ struct ENGINE_STATE
 	std::atomic<bool> inspectorRunning{ false };
 	std::atomic<bool> dbInsertRunning{ false };
 	std::atomic<bool> ipcClientRunning{ false };
+
+	// 인터페이스명
+	std::string interfaceName;
 };
 
 // =============================================================================================
