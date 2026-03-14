@@ -158,6 +158,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="config.cpp" />
     <ClCompile Include="IpcClient.cpp" />
     <ClCompile Include="Inspector.cpp" />
     <ClCompile Include="pch.cpp">

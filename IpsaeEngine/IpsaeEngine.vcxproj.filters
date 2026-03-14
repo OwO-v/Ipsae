@@ -36,6 +36,9 @@
     <ClCompile Include="IpcClient.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="config.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
