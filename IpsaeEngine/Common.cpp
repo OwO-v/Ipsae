@@ -13,14 +13,8 @@
 /// </summary>
 void InitializeLogger()
 {
-	// exe 기준 절대 경로로 로그 디렉토리 생성
-	char exePath[MAX_PATH] = {};
-	GetModuleFileNameA(NULL, exePath, MAX_PATH);
-	std::string exeDir(exePath);
-	exeDir = exeDir.substr(0, exeDir.find_last_of("\\/"));
-	std::string logDir = exeDir + "\\logs";
-	CreateDirectoryA(logDir.c_str(), NULL);
-	std::string logPath = logDir + "\\ipsae.log";
+	CreateDirectoryA("C:\\Ipsae\\logs", NULL);
+	std::string logPath = "C:\\Ipsae\\logs\\ipsae.log";
 
 	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 	auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logPath, 1024 * 1024 * 5, 3);

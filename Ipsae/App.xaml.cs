@@ -19,7 +19,7 @@ public partial class App : Application
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File("logs/ipsae-ui.log",
+            .WriteTo.File(@"C:\Ipsae\logs\ipsae-ui.log",
                 rollingInterval: RollingInterval.Day,
                 fileSizeLimitBytes: 5 * 1024 * 1024,
                 retainedFileCountLimit: 3)

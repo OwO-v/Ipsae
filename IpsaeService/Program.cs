@@ -5,8 +5,7 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        var exeDir = AppContext.BaseDirectory;
-        var logPath = Path.Combine(exeDir, "logs", "ipsae-service.log");
+        var logPath = @"C:\Ipsae\logs\ipsae-service.log";
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
