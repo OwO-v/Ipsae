@@ -106,15 +106,23 @@ public class ServiceStatusViewModel : ViewModelBase
         set => SetProperty(ref _isStatusTabActive, value);
     }
 
-    private void ToggleService()
+    private async void ToggleService()
     {
         var state = ServiceState.Instance;
-        state.Status = state.Status switch
+        var ipc = IpcClient.Instance;
+
+        if (state.Status == ServiceStatusCode.Active)
         {
-            ServiceStatusCode.Active => ServiceStatusCode.Stopping,
-            ServiceStatusCode.Inactive => ServiceStatusCode.Starting,
-            _ => state.Status
-        };
+            state.Status = ServiceStatusCode.Stopping;
+            var result = await ipc.StopServiceAsync();
+            state.Status = result ?? ServiceStatusCode.Inactive;
+        }
+        else if (state.Status == ServiceStatusCode.Inactive)
+        {
+            state.Status = ServiceStatusCode.Starting;
+            var result = await ipc.StartServiceAsync();
+            state.Status = result ?? ServiceStatusCode.Inactive;
+        }
     }
 
     private void OnServiceStateChanged(object? sender, PropertyChangedEventArgs e)

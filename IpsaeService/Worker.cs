@@ -19,7 +19,7 @@ public class Worker : BackgroundService
     private volatile ServiceStatusCode _status = ServiceStatusCode.Inactive;
     private volatile EngineAction _requestedAction = EngineAction.Start;
 
-    private const string EnginePath = @"C:\Program Files\Ipsae\IpsaeEngine.exe";
+    private readonly string EnginePath = Path.Combine(AppContext.BaseDirectory, "IpsaeEngine.exe");
     private const int EngineCheckIntervalMs = 2000;
 
     public Worker(ILogger<Worker> logger)
@@ -48,7 +48,13 @@ public class Worker : BackgroundService
         {
             while (!ct.IsCancellationRequested)
             {
-                var action = _requestedAction;
+                EngineAction action;
+
+                lock (_lock)
+                {
+                    action = _requestedAction;
+                    _requestedAction = EngineAction.None;
+                }
 
                 switch (action)
                 {
@@ -92,7 +98,6 @@ public class Worker : BackgroundService
             lock (_lock)
             {
                 _status = ServiceStatusCode.Starting;
-                _requestedAction = EngineAction.None;
             }
 
             _logger.LogInformation("Starting engine: {Path}", EnginePath);
@@ -140,7 +145,6 @@ public class Worker : BackgroundService
             lock (_lock)
             {
                 _status = ServiceStatusCode.Inactive;
-                _requestedAction = EngineAction.None;
             }
             return;
         }
@@ -150,7 +154,6 @@ public class Worker : BackgroundService
             lock (_lock)
             {
                 _status = ServiceStatusCode.Stopping;
-                _requestedAction = EngineAction.None;
             }
 
             _logger.LogInformation("Stopping engine (PID: {Pid})", process.Id);
@@ -245,6 +248,7 @@ public class Worker : BackgroundService
                 lock (_lock)
                 {
                     _requestedAction = EngineAction.Start;
+                    _status = ServiceStatusCode.Starting;
                 }
                 return PipeMessage.Status(_status);
 
@@ -253,6 +257,7 @@ public class Worker : BackgroundService
                 lock (_lock)
                 {
                     _requestedAction = EngineAction.Stop;
+                    _status = ServiceStatusCode.Stopping;
                 }
                 return PipeMessage.Status(_status);
 

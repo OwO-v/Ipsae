@@ -9,14 +9,19 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <IsPublishable>False</IsPublishable>
+    <OutputPath>..\CompiledExe\Debug\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <IsPublishable>False</IsPublishable>
+    <OutputPath>..\CompiledExe\Release\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
