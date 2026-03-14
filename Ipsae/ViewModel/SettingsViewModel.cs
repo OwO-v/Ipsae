@@ -4,7 +4,6 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows.Input;
 using Ipsae.Model;
-using Ipsae.Navigation;
 
 namespace Ipsae.ViewModel;
 

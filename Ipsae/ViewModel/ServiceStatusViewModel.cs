@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Windows.Input;
 using Ipsae.Ipc;
-using Ipsae.Navigation;
 using IpsaeShared;
 
 namespace Ipsae.ViewModel;

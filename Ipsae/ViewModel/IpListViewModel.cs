@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Ipsae.Model;
-using Ipsae.Navigation;
 
 namespace Ipsae.ViewModel;
 
