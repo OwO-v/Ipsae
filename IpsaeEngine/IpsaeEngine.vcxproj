@@ -135,6 +135,11 @@
       <AdditionalLibraryDirectories>$(ProjectDir)lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(ProjectDir)lib\x64\WinDivert.dll" "$(OutDir)"
+copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"
+copy /Y "$(ProjectDir)lib\x64\sqlite3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -155,6 +160,11 @@
       <AdditionalLibraryDirectories>$(ProjectDir)lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(ProjectDir)lib\x64\WinDivert.dll" "$(OutDir)"
+copy /Y "$(ProjectDir)lib\x64\WinDivert64.sys" "$(OutDir)"
+copy /Y "$(ProjectDir)lib\x64\sqlite3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp" />
