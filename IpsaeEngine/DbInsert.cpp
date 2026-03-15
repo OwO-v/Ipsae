@@ -8,6 +8,8 @@
 
 static ThreadSafeQueue<DB_INSERT_BATCH> s_dbInsertQueue;
 
+static std::unordered_set<UINT32> _threat_hosts;
+
 static const char* DB_LIST[] = {
     "tb_threat_host",
     "tb_network_log",
@@ -28,6 +30,11 @@ static unsigned int StartDbInsert(HANDLE hReadyEvent, ENGINE_STATE* state);
 #pragma endregion
 
 #pragma region Functions
+
+void GetThreatHostsFromDb(std::unordered_set<UINT32>* hostList)
+{
+   *hostList = std::move(_threat_hosts);
+}
 
 void EnqueueDbInsert(const DB_INSERT_BATCH& data)
 {
@@ -288,6 +295,7 @@ static unsigned int StartDbInsert(HANDLE hReadyEvent, ENGINE_STATE* state)
         SetEvent(hReadyEvent);
         return 1;
     }
+	_threat_hosts = std::move(threat_hosts);
 
     // Main 에게 Thread 가 준비되었음을 알림
     state->dbInsertRunning = true;

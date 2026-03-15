@@ -2,6 +2,9 @@
 #include "Common.h"
 #include "Models.h"
 
+void GetThreatHostsFromDb(std::unordered_set<UINT32>* hostList);
+
+
 /// <summary>
 /// DB 삽입 스레드를 시작합니다.
 /// </summary>

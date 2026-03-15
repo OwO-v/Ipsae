@@ -9,6 +9,7 @@
 #include <winternl.h> // NtQueryInformationProcess 함수 사용을 위한 헤더
 
 #pragma comment(lib, "Iphlpapi.lib") // IP Helper API 라이브러리 링크
+#pragma comment(lib, "ws2_32.lib") // Windows Sockets API 라이브러리 링크
 
 #pragma region Variables
 
@@ -75,7 +76,8 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 	UINT32 targetPID = 0; // PID 저장용
 
 	DB_INSERT_DATA dbData; // DB에 삽입할 데이터 저장용 구조체
-	 
+	GetThreatHostsFromDb(&threatHosts); // DB에서 위협 호스트 목록 가져오기
+
 	// Main 에게 Thread 가 준비되었음을 알림
 	state->inspectorRunning = true;
 	SetEvent(hReadyEvent);
@@ -101,13 +103,30 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 
 				// 현재 프로세스 정보 탐색
 				// TCP 연결 정보 가져오기 - table size를 먼저 가져오기
-				GetExtendedTcpTable(NULL, &tableSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+				DWORD errCheck = GetExtendedTcpTable(NULL, &tableSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+				if (errCheck != ERROR_INSUFFICIENT_BUFFER)
+				{
+					spdlog::error("[Inspector] GetExtendedTcpTable size query failed: {}", errCheck);
+					continue;
+				}
 
 				// tcpTable 메모리 할당
 				tcpTable = (MIB_TCPTABLE_OWNER_PID*)malloc(tableSize);
+				if (!tcpTable)
+				{
+					spdlog::error("[Inspector] malloc failed: {} bytes", tableSize);
+					continue;
+				}
 				
 				// TCP 연결 정보 가져오기 - tcpTable에 저장
-				GetExtendedTcpTable(tcpTable, &tableSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+				errCheck = GetExtendedTcpTable(tcpTable, &tableSize, TRUE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+				if (errCheck != NO_ERROR) 
+				{
+					spdlog::error("[Inspector] GetExtendedTcpTable data query failed: {}", errCheck);
+					free(tcpTable);
+					tcpTable = NULL;
+					continue;
+				}
 
 				// PID 찾기
 				getPID(tcpTable, ip, &targetPID);
@@ -115,6 +134,7 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 				// 예외 : PID가 0인 경우 (일치하는 IP가 없는 경우)
 				if (targetPID == 0) {
 					spdlog::warn("[Inspector] 일치하는 IP가 없습니다: {}", ipStr);
+					free(tcpTable);
 					continue;
 				}
 
@@ -129,6 +149,9 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 					std::vector<PROCESS_LOG> processes;
 				};*/
 
+				// 메모리 해제
+				free(tcpTable);
+				tcpTable = NULL;
 			}
 
 			// DB_INSERT_BATCH 구조체에 데이터 채우기	
@@ -147,8 +170,10 @@ static unsigned int StartInspector(HANDLE hReadyEvent, ENGINE_STATE* state)
 
 // Table에서 Loop로 해당 ip와 일치하는 PID 가져오는 함수
 void getPID(const MIB_TCPTABLE_OWNER_PID* curTable, const UINT32 ip, UINT32* curPID) {
+	UINT32 check;
 	for (UINT32 i = 0; i < curTable->dwNumEntries; i++) {
-		if (curTable->table[i].dwRemoteAddr == ip) {
+		check = ntohl(curTable->table[i].dwRemoteAddr); // ntohl 함수를 사용하여 네트워크 바이트 순서에서 호스트 바이트 순서로 변환
+		if (check == ip) { 
 			*curPID = curTable->table[i].dwOwningPid;
 			return;
 		}
