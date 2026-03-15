@@ -262,7 +262,7 @@ static unsigned int StartDbInsert(HANDLE hReadyEvent, ENGINE_STATE* state)
     DB_INSERT_BATCH data;
 
     // DB Open
-    int rc = sqlite3_open("ipsaedb.db", &db);
+    int rc = sqlite3_open("C:\\Ipsae\\ipsaedb.db", &db);
     if (rc != SQLITE_OK)
     {
         spdlog::error("[DbInsert] sqlite3_open: {}", sqlite3_errmsg(db));

@@ -8,39 +8,59 @@
 
 #define THREAD_COUNT 4
 
-static unsigned int __stdcall WorkerThread(void* param)
+/// <summary>
+/// 커맨드라인 파라미터를 파싱하여 ENGINE_STATE에 저장한다.
+/// 사용법: IpsaeEngine.exe --db "경로" --ini "경로" --pipe "파이프명"
+/// </summary>
+static void ParseArguments(int argc, wchar_t* argv[], ENGINE_STATE& state)
 {
-    THREAD_CONTEXT* context = (THREAD_CONTEXT*)param;
-
-    SetEvent(context->hReadyEvent);
-    
-    return 0;
+    for (int i = 1; i < argc; i++)
+    {
+        if (wcscmp(argv[i], L"--db") == 0 && i + 1 < argc)
+        {
+            char buf[MAX_PATH];
+            WideCharToMultiByte(CP_UTF8, 0, argv[++i], -1, buf, MAX_PATH, NULL, NULL);
+            state.config.dbPath = buf;
+        }
+        else if (wcscmp(argv[i], L"--ini") == 0 && i + 1 < argc)
+        {
+            char buf[MAX_PATH];
+            WideCharToMultiByte(CP_UTF8, 0, argv[++i], -1, buf, MAX_PATH, NULL, NULL);
+            state.config.iniPath = buf;
+        }
+        else if (wcscmp(argv[i], L"--pipe") == 0 && i + 1 < argc)
+        {
+            char buf[256];
+            WideCharToMultiByte(CP_UTF8, 0, argv[++i], -1, buf, 256, NULL, NULL);
+            state.config.pipeName = buf;
+        }
+    }
 }
 
-//
-//static BOOL WINAPI CtrlHandler(DWORD ctrlType)
-//{
-//    if (ctrlType == CTRL_C_EVENT)
-//    {
-//        g_running = FALSE;
-//        StopPacketCapture();
-//        return TRUE;
-//    }
-//    return FALSE;
-//}
-
-
-int wmain()
+int wmain(int argc, wchar_t* argv[])
 {
     SetConsoleOutputCP(CP_UTF8);
 
     /* ============================== */
-    // 1. Initialize 작성
+    // 1. Initialize
     /* ============================== */
     InitializeLogger();
 
     ENGINE_STATE state;
     state.status = ENGINE_INIT;
+
+    ParseArguments(argc, argv, state);
+
+    // 파라미터가 없으면 기본값 사용
+    if (state.config.dbPath.empty())   state.config.dbPath   = "C:\\Ipsae\\ipsaedb.db";
+    if (state.config.iniPath.empty())  state.config.iniPath  = "C:\\Ipsae\\ipsae.ini";
+    if (state.config.pipeName.empty()) state.config.pipeName = "IpsaeEngine";
+
+    spdlog::info("[main] DB:   {}", state.config.dbPath);
+    spdlog::info("[main] INI:  {}", state.config.iniPath);
+    spdlog::info("[main] Pipe: {}", state.config.pipeName);
+
+    // TODO: state.iniPath에서 config 로드 (interfaceName 등)
 
 	state.interfaceName = iniInterfaceParser();
 
@@ -54,10 +74,10 @@ int wmain()
 
     HANDLE hThreads[THREAD_COUNT] = {};
     THREAD_CONTEXT threadContexts[THREAD_COUNT] = {};
-    THREAD_FUNC threadFunctions[THREAD_COUNT] = { 
+    THREAD_FUNC threadFunctions[THREAD_COUNT] = {
         StartIpcClientThread,
-        StartDbInsertThread, 
-        StartInspectorThread, 
+        StartDbInsertThread,
+        StartInspectorThread,
         StartPacketCaptureThread
     };
 
@@ -102,7 +122,7 @@ int wmain()
                 CloseHandle(hThreads[j]);
             return 1;
         }
-        
+
         // 잠시 대기
         Sleep(100);
     }

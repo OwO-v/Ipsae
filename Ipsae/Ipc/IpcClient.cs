@@ -16,7 +16,7 @@ public class IpcClient
         try
         {
             // 클라이언트 스트림을 생성, 타임아웃이 발생하면 예외가 발생하도록 cts 토큰 설정
-            await using var client = new NamedPipeClientStream(".", PipeProtocol.PipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await using var client = new NamedPipeClientStream(".", PipeProtocol.EnginePipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             using var cts = new CancellationTokenSource(timeoutMs);
 
             // 클라이언트 연결을 비동기로 시도하고, 타임아웃이 발생하면 예외가 발생하도록 설정

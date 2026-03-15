@@ -5,7 +5,7 @@
 
 // IpsaeService(C# Named Pipe 서버)와 통신할 때 사용하는 파이프 이름
 // PipeProtocol.cs의 PipeName = "IpsaeIDS" 와 동일해야 함
-static const wchar_t* PIPE_NAME = L"\\\\.\\pipe\\IpsaeIDS";
+static const wchar_t* PIPE_NAME = L"\\\\.\\pipe\\IpsaeEngine";
 
 // 파이프 연결 시 최대 대기 시간 (밀리초)
 static const DWORD PIPE_CONNECT_TIMEOUT = 3000;
@@ -22,18 +22,17 @@ static const int MAX_PAYLOAD_SIZE = 1024 * 64;
 static const int HEADER_SIZE = 5;
 
 // ── PipeCommand (Client -> Service) ──
-static const BYTE CMD_QUERY_STATUS = 0x01;  // 현재 서비스 상태 조회
-static const BYTE CMD_START_SERVICE = 0x02; // 서비스 시작 요청
-static const BYTE CMD_STOP_SERVICE = 0x03;  // 서비스 중지 요청
+static const BYTE CMD_QUERY_STATUS = 0x01; // 상태 조회
 
 // ── PipeCommand (Service -> Client) ──
 static const BYTE CMD_STATUS_RESPONSE = 0x81; // 상태 응답
 
 // ── ServiceStatusCode ──
-static const BYTE STATUS_ACTIVE   = 0x00; // 서비스 실행 중
-static const BYTE STATUS_INACTIVE = 0x01; // 서비스 중지됨
-static const BYTE STATUS_STARTING = 0x02; // 서비스 시작 중
-static const BYTE STATUS_STOPPING = 0x03; // 서비스 중지 중
+static const BYTE STATUS_ACTIVE   = 0x11; // 서비스 실행 중
+static const BYTE STATUS_INACTIVE = 0x12; // 서비스 중지됨
+static const BYTE STATUS_STARTING = 0x13; // 서비스 시작 중
+static const BYTE STATUS_STOPPING = 0x14; // 서비스 중지 중
+static const BYTE STATUS_ERROR = 0x15; // 서비스 오류 상태
 
 // 엔진 상태를 주기적으로 서비스에 보고하는 간격 (밀리초)
 static const DWORD REPORT_INTERVAL = 5000;
@@ -74,14 +73,7 @@ static void StopIpcClient(HANDLE hPipe, ENGINE_STATE* state)
 static HANDLE ConnectToPipe()
 {
 	// 첫 번째 시도: 파이프에 즉시 연결 시도
-    HANDLE hPipe = CreateFileW(
-        PIPE_NAME,                          // 파이프 경로 (\\.\pipe\IpsaeIDS)
-        GENERIC_READ | GENERIC_WRITE,       // 읽기/쓰기 양방향 접근
-        0,                                  // 공유 모드 없음 (단독 접근)
-        NULL,                               // 기본 보안 속성
-        OPEN_EXISTING,                      // 기존 파이프에 연결
-        0,                                  // 동기 I/O (플래그 없음)
-        NULL);                              // 템플릿 파일 없음
+    HANDLE hPipe = CreateFileW(PIPE_NAME, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 
     // 연결 성공 시 즉시 반환
     if (hPipe != INVALID_HANDLE_VALUE)
@@ -93,29 +85,6 @@ static HANDLE ConnectToPipe()
     {
         spdlog::warn("[IpcClient] ConnectToPipe: 파이프를 찾을 수 없습니다. (error {})", err);
         return INVALID_HANDLE_VALUE;
-    }
-
-	// 첫 번째 시도: 파이프가 현재 사용 중이므로 대기
-    if (!WaitNamedPipeW(PIPE_NAME, PIPE_CONNECT_TIMEOUT))
-    {
-        spdlog::warn("[IpcClient] ConnectToPipe: 파이프 대기 시간 초과");
-        return INVALID_HANDLE_VALUE;
-    }
-
-    // 2차 시도: 대기 후 파이프 인스턴스가 사용 가능해졌으므로 재연결
-    hPipe = CreateFileW(
-        PIPE_NAME,
-        GENERIC_READ | GENERIC_WRITE,
-        0,
-        NULL,
-        OPEN_EXISTING,
-        0,
-        NULL);
-
-	// 2차 시도 결과 반환 (성공 또는 실패)
-    if (hPipe == INVALID_HANDLE_VALUE)
-    {
-        spdlog::warn("[IpcClient] ConnectToPipe: 2차 연결 실패 (error {})", GetLastError());
     }
 
     return hPipe;
@@ -142,11 +111,9 @@ static int SendCommand(HANDLE hPipe, BYTE command)
     }
 
     // 버퍼에 남아있는 데이터를 즉시 전송
-    // 서버 측(C#)에서 ReadAsync가 블로킹 중이므로 Flush하지 않으면 데이터가 지연될 수 있음
     FlushFileBuffers(hPipe);
     return 0;
 }
-
 
 static int ReadResponse(HANDLE hPipe, BYTE* outCommand, std::vector<BYTE>& outPayload)
 {
@@ -241,16 +208,15 @@ static int QueryServiceStatus(HANDLE hPipe, BYTE* outStatus)
     if (ReadResponse(hPipe, &responseCommand, payload) != 0)
         return 1;
 
-    // ── 응답 검증 ──
-    // 1) 명령 코드가 StatusResponse(0x81)인지 확인
+    // 명령 코드가 StatusResponse(0x81)인지 확인
     if (responseCommand != CMD_STATUS_RESPONSE)
     {
         spdlog::error("[IpcClient] QueryServiceStatus: 예상과 다른 응답 명령 (0x{:02X})", responseCommand);
         return 1;
     }
 
-    // 2) 페이로드가 최소 1바이트 이상인지 확인
-    //    PipeMessage.Status()는 항상 1바이트 페이로드를 포함함
+    // 페이로드가 최소 1바이트 이상인지 확인
+    // PipeMessage.Status()는 항상 1바이트 페이로드를 포함함
     if (payload.empty())
     {
         spdlog::error("[IpcClient] QueryServiceStatus: 빈 페이로드");
