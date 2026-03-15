@@ -13,10 +13,22 @@ enum ENGINE_STATUS
 	ENGINE_WAITING		// 대기 단계
 };
 
+struct ENGINE_CONFIG
+{
+	// 인터페이스명
+	std::string interfaceName;
+
+	// 경로 (서비스에서 파라미터로 전달)
+	std::string dbPath;
+	std::string iniPath;
+	std::string pipeName;
+};
+
 struct ENGINE_STATE
 {
 	// 엔진 전체 상태
-	ENGINE_STATUS status{ ENGINE_INIT };
+	ENGINE_STATUS status = ENGINE_INIT;
+	ENGINE_CONFIG config;
 
 	// 각 모듈의 실행 상태 플래그
 	std::atomic<bool> packetCaptureRunning{ false };
