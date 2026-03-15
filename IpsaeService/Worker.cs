@@ -9,9 +9,9 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly object _lock = new();
 
-    private volatile ServiceStatusCode _status;
+    private volatile ServiceStatusCode _status = ServiceStatusCode.Inactive;
 
-    private readonly string EnginePath = Path.Combine(AppContext.BaseDirectory, "IpsaeEngine.exe");
+    private const string EnginePath = @"C:\Ipsae\IpsaeEngine\IpsaeEngine.exe";
     private Process? EngineProcess = null;
 
     #region Main Loop
@@ -235,7 +235,7 @@ public class Worker : BackgroundService
                 process = Process.Start(new ProcessStartInfo
                 {
                     FileName = EnginePath,
-                    Arguments = $"--db \"{IpsaePaths.DbPath}\" --ini \"{IpsaePaths.IniPath}\"",
+                    Arguments = $"--db \"{IpsaePaths.DbPath}\" --ini \"{IpsaePaths.IniPath}\" --pipe \"{PipeProtocol.EnginePipeName}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 });

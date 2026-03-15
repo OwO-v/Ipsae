@@ -35,7 +35,6 @@ struct ENGINE_STATE
 	std::atomic<bool> inspectorRunning{ false };
 	std::atomic<bool> dbInsertRunning{ false };
 	std::atomic<bool> ipcClientRunning{ false };
-
 };
 
 // =============================================================================================
