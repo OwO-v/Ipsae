@@ -4,7 +4,6 @@
 #include "DbInsert.h"
 #include "Inspector.h"
 #include "PacketCapture.h"
-#include "config.h"
 
 #define THREAD_COUNT 4
 
@@ -59,10 +58,8 @@ int wmain(int argc, wchar_t* argv[])
     spdlog::info("[main] DB:   {}", state.config.dbPath);
     spdlog::info("[main] INI:  {}", state.config.iniPath);
     spdlog::info("[main] Pipe: {}", state.config.pipeName);
-
-    // TODO: state.iniPath에서 config 로드 (interfaceName 등)
-
-	state.interfaceName = iniInterfaceParser();
+    
+	state.config.interfaceName = iniInterfaceParser(state.config.iniPath);
 
     /* ============================== */
     // 2. Flag 초기화 작성

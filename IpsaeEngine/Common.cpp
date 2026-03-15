@@ -2,6 +2,7 @@
 #include "Common.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/rotating_file_sink.h>
+#include <windows.h>
 
 
 // =============================================================================================
@@ -75,4 +76,23 @@ UINT32 StrToIp(const char* str)
 	UINT8 b[4];
 	sscanf_s(str, "%hhu.%hhu.%hhu.%hhu", &b[0], &b[1], &b[2], &b[3]);
 	return *(UINT32*)b;
+}
+
+
+/// <summary>
+/// INI 파일에서 네트워크 인터페이스 이름을 읽어옵니다.
+/// </summary>
+std::string iniInterfaceParser(const std::string iniPath)
+{
+	char interfaceOutput[256] = {};
+
+	GetPrivateProfileStringA("Engine", "Interface", "", interfaceOutput, sizeof(interfaceOutput), iniPath.c_str());
+
+	if (interfaceOutput[0] == '\0')
+	{
+		MessageBoxA(NULL, "Failed to load interface from config.ini", "오류", MB_OK | MB_ICONERROR);
+		return "";
+	}
+
+	return interfaceOutput;
 }

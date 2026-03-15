@@ -36,8 +36,6 @@ struct ENGINE_STATE
 	std::atomic<bool> dbInsertRunning{ false };
 	std::atomic<bool> ipcClientRunning{ false };
 
-	// 인터페이스명
-	std::string interfaceName;
 };
 
 // =============================================================================================
@@ -176,3 +174,5 @@ bool WaitForEngineWaiting(ENGINE_STATE* state, const char* caller);
 void IpToStr(UINT32 ip, char* buf, size_t bufLen);
 
 UINT32 StrToIp(const char* str);
+
+std::string iniInterfaceParser(const std::string iniPath);
