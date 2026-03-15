@@ -52,8 +52,8 @@ int wmain(int argc, wchar_t* argv[])
     ParseArguments(argc, argv, state);
 
     // 파라미터가 없으면 기본값 사용
-    if (state.config.dbPath.empty())   state.config.dbPath   = "C:\\Ipsae\\ipsaedb.db";
-    if (state.config.iniPath.empty())  state.config.iniPath  = "C:\\Ipsae\\ipsae.ini";
+    if (state.config.dbPath.empty())   state.config.dbPath   = "C:\\Ipsae\\Config\\ipsaedb.db";
+    if (state.config.iniPath.empty())  state.config.iniPath  = "C:\\Ipsae\\Config\\config.ini";
     if (state.config.pipeName.empty()) state.config.pipeName = "IpsaeEngine";
 
     spdlog::info("[main] DB:   {}", state.config.dbPath);
@@ -62,7 +62,7 @@ int wmain(int argc, wchar_t* argv[])
 
     // TODO: state.iniPath에서 config 로드 (interfaceName 등)
 
-	state.interfaceName = iniInterfaceParser();
+	state.config.interfaceName = iniInterfaceParser();
 
     /* ============================== */
     // 2. Flag 초기화 작성

@@ -242,6 +242,7 @@ static const char* StatusCodeToString(BYTE status)
     case STATUS_INACTIVE: return "Inactive";
     case STATUS_STARTING: return "Starting";
     case STATUS_STOPPING: return "Stopping";
+    case CMD_STATUS_RESPONSE: return "Live";
     default:              return "Unknown";
     }
 }
